@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="62" viewBox="0 0 340 62" font-family="Segoe UI, Arial, Helvetica, sans-serif">
+  <rect x="1" y="1" width="338" height="60" rx="15" fill="#2E9BFF"/>
+  <rect x="30" y="19" width="24" height="24" rx="4" fill="none" stroke="#FFFFFF" stroke-width="2.4"/>
+  <line x1="30" y1="27" x2="54" y2="27" stroke="#FFFFFF" stroke-width="2.4"/>
+  <text x="68" y="39" font-size="19" font-weight="600" fill="#FFFFFF">Build the RPM</text>
+</svg>

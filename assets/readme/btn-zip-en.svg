@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="62" viewBox="0 0 340 62" font-family="Segoe UI, Arial, Helvetica, sans-serif">
+  <rect x="1" y="1" width="338" height="60" rx="15" fill="#FFFFFF" stroke="#2E9BFF" stroke-width="2"/>
+  <g stroke="#2E9BFF" stroke-width="2.6" fill="none" stroke-linecap="round">
+    <path d="M31,20 L31,34"/>
+    <path d="M25,28 L31,34 L37,28"/>
+    <path d="M23,41 L39,41"/>
+  </g>
+  <text x="68" y="39" font-size="19" font-weight="600" fill="#2E9BFF">Install from zip</text>
+</svg>

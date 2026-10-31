@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260" font-family="Segoe UI, Arial, Helvetica, sans-serif">
+  <rect width="1200" height="260" fill="#FFFFFF"/>
+  <rect width="10" height="260" fill="#2E9BFF"/>
+  <text x="56" y="54" font-size="16" font-weight="700" letter-spacing="3" fill="#2E9BFF">LUMEN</text>
+  <text x="1144" y="54" font-size="16" fill="#8CA2B8" text-anchor="end">☀ every screen, its own slider</text>
+  <text x="54" y="110" font-size="46" font-weight="700" fill="#17222E">By the numbers</text>
+  <line x1="56" y1="132" x2="1144" y2="132" stroke="#E3EBF4" stroke-width="2"/>
+
+  <g>
+    <rect x="56" y="156" width="258" height="84" rx="14" fill="#F4F8FD" stroke="#E3EBF4" stroke-width="1.5"/>
+    <text x="185" y="208" font-size="38" font-weight="700" fill="#2E9BFF" text-anchor="middle">0</text>
+    <text x="185" y="230" font-size="14" fill="#5B6B7B" text-anchor="middle">root privileges</text>
+  </g>
+  <g>
+    <rect x="336" y="156" width="258" height="84" rx="14" fill="#F4F8FD" stroke="#E3EBF4" stroke-width="1.5"/>
+    <text x="465" y="208" font-size="38" font-weight="700" fill="#2E9BFF" text-anchor="middle">1</text>
+    <text x="465" y="230" font-size="14" fill="#5B6B7B" text-anchor="middle">icon in the panel</text>
+  </g>
+  <g>
+    <rect x="616" y="156" width="258" height="84" rx="14" fill="#F4F8FD" stroke="#E3EBF4" stroke-width="1.5"/>
+    <text x="745" y="208" font-size="38" font-weight="700" fill="#2E9BFF" text-anchor="middle">150 ms</text>
+    <text x="745" y="230" font-size="14" fill="#5B6B7B" text-anchor="middle">DDC write debounce</text>
+  </g>
+  <g>
+    <rect x="896" y="156" width="258" height="84" rx="14" fill="#F4F8FD" stroke="#E3EBF4" stroke-width="1.5"/>
+    <text x="1025" y="208" font-size="38" font-weight="700" fill="#2E9BFF" text-anchor="middle">45–50</text>
+    <text x="1025" y="230" font-size="14" fill="#5B6B7B" text-anchor="middle">GNOME Shell versions</text>
+  </g>
+</svg>

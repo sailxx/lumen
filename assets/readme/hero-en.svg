@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" font-family="Segoe UI, Arial, Helvetica, sans-serif">
+  <rect width="1200" height="640" fill="#F4F8FD"/>
+  <circle cx="1080" cy="520" r="80" fill="none" stroke="#DCE9F8" stroke-width="3"/>
+  <circle cx="1080" cy="520" r="52" fill="none" stroke="#DCE9F8" stroke-width="3"/>
+
+  <!-- GNOME top bar -->
+  <rect x="80" y="64" width="1040" height="46" rx="10" fill="#1D222B"/>
+  <text x="104" y="93" font-size="17" fill="#CFD8E3">Activities</text>
+  <text x="600" y="93" font-size="17" fill="#E8EDF4" text-anchor="middle">Oct 31  19:42</text>
+  <!-- signal -->
+  <g fill="#CFD8E3">
+    <rect x="1062" y="87" width="4" height="9" rx="1"/>
+    <rect x="1068" y="84" width="4" height="12" rx="1"/>
+    <rect x="1074" y="80" width="4" height="16" rx="1"/>
+  </g>
+  <!-- battery -->
+  <rect x="1096" y="82" width="22" height="11" rx="2.5" fill="none" stroke="#CFD8E3" stroke-width="2"/>
+  <rect x="1119" y="85.5" width="3" height="4" fill="#CFD8E3"/>
+  <rect x="1099" y="85" width="12" height="5" fill="#CFD8E3"/>
+  <!-- Lumen sun, highlighted -->
+  <rect x="1006" y="70" width="36" height="36" rx="9" fill="#2E9BFF"/>
+  <circle cx="1024" cy="88" r="6" fill="#FFFFFF"/>
+  <g stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round">
+    <line x1="1032.5" y1="88" x2="1036" y2="88"/>
+    <line x1="1015.5" y1="88" x2="1012" y2="88"/>
+    <line x1="1024" y1="96.5" x2="1024" y2="100"/>
+    <line x1="1024" y1="79.5" x2="1024" y2="76"/>
+    <line x1="1030" y1="94" x2="1032.5" y2="96.5"/>
+    <line x1="1018" y1="82" x2="1015.5" y2="79.5"/>
+    <line x1="1018" y1="94" x2="1015.5" y2="96.5"/>
+    <line x1="1030" y1="82" x2="1032.5" y2="79.5"/>
+  </g>
+
+  <!-- popup menu -->
+  <rect x="820" y="124" width="340" height="240" rx="14" fill="#232833" stroke="#39404D" stroke-width="1.5"/>
+  <!-- row 1 -->
+  <text x="842" y="168" font-size="15" fill="#E8EDF4">Laptop display</text>
+  <text x="1138" y="168" font-size="15" fill="#8F9BAB" text-anchor="end">70</text>
+  <rect x="842" y="182" width="296" height="8" rx="4" fill="#3A4250"/>
+  <rect x="842" y="182" width="207" height="8" rx="4" fill="#2E9BFF"/>
+  <circle cx="1049" cy="186" r="9" fill="#FFFFFF" stroke="#2E9BFF" stroke-width="3"/>
+  <!-- row 2 -->
+  <text x="842" y="232" font-size="15" fill="#E8EDF4">DP-1 · DELL U2415</text>
+  <text x="1138" y="232" font-size="15" fill="#8F9BAB" text-anchor="end">45</text>
+  <rect x="842" y="246" width="296" height="8" rx="4" fill="#3A4250"/>
+  <rect x="842" y="246" width="133" height="8" rx="4" fill="#2E9BFF"/>
+  <circle cx="975" cy="250" r="9" fill="#FFFFFF" stroke="#2E9BFF" stroke-width="3"/>
+  <line x1="842" y1="278" x2="1138" y2="278" stroke="#39404D" stroke-width="1.5"/>
+  <text x="842" y="308" font-size="15" fill="#CFD8E3">Refresh monitors</text>
+  <text x="1138" y="308" font-size="15" fill="#8F9BAB" text-anchor="end">›</text>
+  <text x="842" y="336" font-size="15" fill="#CFD8E3">Settings</text>
+  <text x="1138" y="336" font-size="15" fill="#8F9BAB" text-anchor="end">›</text>
+
+  <!-- cursor -->
+  <g transform="translate(1046,84)">
+    <path d="M0,0 L0,17 L4.5,13 L8,20 L11,18.5 L7.8,11.5 L13,11 Z" fill="#FFFFFF" stroke="#17222E" stroke-width="1.2"/>
+  </g>
+
+  <!-- annotations -->
+  <g font-size="15" fill="#34455C" text-anchor="end">
+    <text x="796" y="176">laptop panel — logind, no root</text>
+    <text x="796" y="246">external — DDC/CI via ddcutil</text>
+    <text x="796" y="308">scroll the panel icon to nudge</text>
+  </g>
+  <g stroke="#9FB6CE" stroke-width="1.5" fill="none">
+    <path d="M802,171 L836,186"/>
+    <path d="M802,241 L836,250"/>
+    <path d="M802,303 L836,310"/>
+  </g>
+
+  <text x="600" y="585" font-size="17" fill="#5B6B7B" text-anchor="middle">GNOME Shell 45–50  ·  Fedora RPM  ·  no root, no daemon</text>
+</svg>
