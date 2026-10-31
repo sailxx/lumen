@@ -1,0 +1,9 @@
+/* Monitor Brightness (DDC/CI) */
+
+.mb-name {
+    width: 170px;
+}
+
+.mb-value {
+    width: 34px;
+}

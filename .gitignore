@@ -1,0 +1,9 @@
+# Дерево сборки RPM
+rpm/rpmbuild/
+*.rpm
+
+# zip-артефакты установки расширения
+*.zip
+
+# скомпилированные GSettings-схемы
+extension/schemas/gschemas.compiled

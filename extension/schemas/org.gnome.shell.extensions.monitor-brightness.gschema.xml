@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.monitor-brightness"
+          path="/org/gnome/shell/extensions/monitor-brightness/">
+
+    <key name="show-internal" type="b">
+      <default>true</default>
+      <summary>Показывать встроенный экран</summary>
+      <description>Добавлять в меню слайдер яркости встроенного экрана ноутбука (управление через logind, без root)</description>
+    </key>
+
+    <key name="scroll-step" type="i">
+      <default>5</default>
+      <summary>Шаг прокрутки, %</summary>
+      <description>На сколько процентов менять яркость при прокрутке колесом мыши на иконке в панели или на строке слайдера</description>
+    </key>
+
+  </schema>
+</schemalist>
