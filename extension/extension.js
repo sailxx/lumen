@@ -29,7 +29,7 @@ const BrightnessRow = GObject.registerClass({
         this.stepPercent = 5;
         this.dragging = false;
         this.pendingWrite = false;
-        this._updating = false;
+        this.updating = false;
 
         this._nameLabel = new St.Label({
             text: desc.label,
@@ -44,392 +44,354 @@ const BrightnessRow = GObject.registerClass({
         this._slider = new Slider.Slider(0);
         this._slider.x_expand = true;
         this._slider.y_align = Clutter.ActorAlign.CENTER;
-        this._slider.connect('drag-begin', () => (this.dragging = true));
-        this._slider.connect('drag-end', () => (this.dragging = false));
+        this._slider.connect('drag-begin', () => { this.dragging = true; });
+        this._slider.connect('drag-end', () => { this.dragging = false; });
         this._slider.connect('notify::value', () => {
             if (this._updating)
                 return;
-
-            this._valueLabel.text = `${Math.round(this._slider.value * 100)}%`;
-            this._valueLabel.tooltip_text = null;
-            this._valueLabel.remove_style_class_name('lumen-error');
-            this.pendingWrite = true;
             this.emit('changed', this._slider.value);
         });
         this.add_child(this._slider);
 
         this._valueLabel = new St.Label({
-            text: '—',
+            text: '--%',
             x_align: Clutter.ActorAlign.END,
             y_align: Clutter.ActorAlign.CENTER,
         });
         this._valueLabel.add_style_class_name('lumen-value');
         this.add_child(this._valueLabel);
 
-        this.sensitive = false;
-        this.connect('scroll-event', (actor, event) => {
+        this._scrollEventId = this.connect('scroll-event', (_actor, event) => {
             const direction = event.get_scroll_direction();
-            if (!this.sensitive)
-                return Clutter.EVENT_PROPAGATE;
+            let delta = 0;
             if (direction === Clutter.ScrollDirection.UP)
-                this._nudge(this.stepPercent);
+                delta = this.stepPercent / 100;
             else if (direction === Clutter.ScrollDirection.DOWN)
-                this._nudge(-this.stepPercent);
-            else
+                delta = -this.stepPercent / 100;
+            else if (direction === Clutter.ScrollDirection.SMOOTH) {
+                const [, dy] = event.get_scroll_delta();
+                if (dy < 0)
+                    delta = this.stepPercent / 100;
+                else if (dy > 0)
+                    delta = -this.stepPercent / 100;
+            }
+
+            if (delta === 0)
                 return Clutter.EVENT_PROPAGATE;
+
+            const nextValue = Math.min(1, Math.max(0, this._slider.value + delta));
+            if (nextValue !== this._slider.value) {
+                this._slider.value = nextValue;
+                this.emit('changed', nextValue);
+            }
             return Clutter.EVENT_STOP;
         });
     }
 
-    _nudge(percent) {
-        const next = this._slider.value + percent / 100;
-        this._slider.value = Math.max(0, Math.min(1, next));
-    }
+    setPercent(pct) {
+        if (pct < 0 || pct > 100)
+            return;
 
-    setOnline(fraction) {
         this._updating = true;
-        this._slider.value = Math.max(0, Math.min(1, fraction));
+        this._slider.value = pct / 100;
+        this._valueLabel.text = `${pct}%`;
         this._updating = false;
-        this.pendingWrite = false;
-        this.sensitive = true;
-        this._valueLabel.text = `${Math.round(this._slider.value * 100)}%`;
-        this._valueLabel.tooltip_text = null;
-        this._valueLabel.remove_style_class_name('lumen-error');
     }
 
-    setUnavailable(message = null) {
-        this.pendingWrite = false;
-        this.sensitive = false;
-        this._valueLabel.text = '—';
-        this._valueLabel.tooltip_text = message;
-        this._valueLabel.remove_style_class_name('lumen-error');
-    }
-
-    setWriteError(message) {
-        this.pendingWrite = false;
-        this.sensitive = true;
-        this._valueLabel.text = '!';
-        this._valueLabel.tooltip_text = message;
-        this._valueLabel.add_style_class_name('lumen-error');
-    }
-
-    get value() {
-        return this._slider.value;
-    }
-
-    set value(value) {
-        this._slider.value = Math.max(0, Math.min(1, value));
-    }
-});
-
-const MonitorBrightnessIndicator = GObject.registerClass(
-class MonitorBrightnessIndicator extends PanelMenu.Button {
-    _init(extension) {
-        super._init(0.5, extension.metadata.name, true);
-
-        this._extension = extension;
-        this._settings = extension.getSettings();
-        this._cancellable = new Gio.Cancellable();
-        this._scanCancellable = null;
-        this._refreshCancellable = null;
-        this._rows = [];
-        this._timeouts = new Map();
-        this._writeQueues = new Map();
-        this._writeGenerations = new Map();
-        this._internal = null;
-        this._lastRow = null;
-        this._placeholder = null;
-        this._scanGeneration = 0;
-        this._refreshGeneration = 0;
-        this._isShutdown = false;
-
-        this.add_child(new St.Icon({
-            icon_name: 'display-brightness-symbolic',
-            style_class: 'system-status-icon',
-        }));
-        this.setMenu(new PopupMenu.PopupMenu(this, 0.5, St.Side.TOP, 0));
-
-        this._section = new PopupMenu.PopupMenuSection();
-        this.menu.addMenuItem(this._section);
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-
-        const rescanItem = new PopupMenu.PopupMenuItem('Refresh displays');
-        rescanItem.connect('activate', () => this.rebuild());
-        this.menu.addMenuItem(rescanItem);
-
-        const preferencesItem = new PopupMenu.PopupMenuItem('Preferences');
-        preferencesItem.connect('activate', () => this._extension.openPreferences());
-        this.menu.addMenuItem(preferencesItem);
-
-        this._openId = this.menu.connect('open-state-changed', (menu, open) => {
-            if (open)
-                this.refreshValues();
-        });
-        this._scrollId = this.connect('scroll-event', (actor, event) => {
-            return this._onPanelScroll(event);
-        });
-        this._internalId = this._settings.connect('changed::show-internal',
-            () => this.rebuild());
-        this._stepId = this._settings.connect('changed::scroll-step', () => {
-            const step = this._settings.get_int('scroll-step');
-            this._rows.forEach(row => (row.stepPercent = step));
-        });
-
-        this.rebuild();
-    }
-
-    rebuild() {
-        if (this._isShutdown)
-            return;
-
-        this._scanGeneration++;
-        const scanGeneration = this._scanGeneration;
-        this._scanCancellable?.cancel();
-        this._scanCancellable = new Gio.Cancellable();
-        this._refreshCancellable?.cancel();
-        this._refreshCancellable = null;
-        this._refreshGeneration++;
-        this._clearRows();
-
-        this._placeholder = new PopupMenu.PopupMenuItem('Scanning for displays…');
-        this._placeholder.sensitive = false;
-        this._section.addMenuItem(this._placeholder);
-
-        detectMonitors(this._scanCancellable).then(monitors => {
-            if (!this._isCurrentScan(scanGeneration))
-                return;
-            this._dropPlaceholder();
-
-            const showInternal = this._settings.get_boolean('show-internal');
-            this._internal = showInternal ? findInternalBacklight() : null;
-            if (this._internal) {
-                this._addRow({
-                    id: 'internal',
-                    label: 'Built-in display',
-                    kind: 'internal',
-                    device: this._internal,
-                });
-            }
-
-            for (const monitor of monitors) {
-                const isBuiltInConnector = monitor.connector &&
-                    /^(eDP|LVDS)/i.test(monitor.connector);
-                if (isBuiltInConnector && (!showInternal || this._internal))
-                    continue;
-
-                const label = monitor.connector && monitor.name
-                    ? `${monitor.connector} · ${monitor.name}`
-                    : monitor.connector ?? monitor.name ?? `Display ${monitor.display}`;
-                this._addRow({
-                    id: `ddc-${monitor.display}`,
-                    label,
-                    kind: 'ddc',
-                    bus: monitor.bus,
-                    display: monitor.display,
-                });
-            }
-
-            if (this._rows.length === 0) {
-                this._showMessage('No controllable displays found. Check DDC/CI and scan again.');
-                return;
-            }
-
-            this.refreshValues();
-        }).catch(error => {
-            if (isCancelled(error) || !this._isCurrentScan(scanGeneration))
-                return;
-
-            this._dropPlaceholder();
-            this._showMessage('Could not scan displays. Check that ddcutil is installed and try again.');
-            console.error(`Lumen: display scan failed: ${error.message}`);
-        });
-    }
-
-    _addRow(description) {
-        const row = new BrightnessRow(description);
-        row.stepPercent = this._settings.get_int('scroll-step');
-        row.connect('changed', (changedRow, fraction) => this._onRowChanged(changedRow, fraction));
-        this._section.addMenuItem(row);
-        this._rows.push(row);
-        return row;
-    }
-
-    _showMessage(message) {
-        const item = new PopupMenu.PopupMenuItem(message);
-        item.sensitive = false;
-        this._section.addMenuItem(item);
-    }
-
-    _onRowChanged(row, fraction) {
-        this._lastRow = row;
-        this._refreshGeneration++;
-        this._refreshCancellable?.cancel();
-
-        const id = row.desc.id;
-        const generation = (this._writeGenerations.get(id) ?? 0) + 1;
-        this._writeGenerations.set(id, generation);
-
-        const existingTimeout = this._timeouts.get(id);
-        if (existingTimeout !== undefined)
-            GLib.source_remove(existingTimeout);
-
-        const timeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, SET_DEBOUNCE_MS, () => {
-            this._timeouts.delete(id);
-            this._queueWrite(row, fraction, generation);
-            return GLib.SOURCE_REMOVE;
-        });
-        this._timeouts.set(id, timeout);
-    }
-
-    _queueWrite(row, fraction, generation) {
-        const id = row.desc.id;
-        const previousWrite = this._writeQueues.get(id) ?? Promise.resolve();
-        const write = previousWrite.catch(() => {}).then(() => {
-            if (this._cancellable.is_cancelled())
-                throw new Error('Lumen is shutting down');
-
-            if (row.desc.kind === 'internal')
-                return writeInternalBrightness(row.desc.device, fraction, this._cancellable);
-
-            return writeBrightness(row.desc, Math.round(fraction * 100), this._cancellable);
-        });
-        this._writeQueues.set(id, write);
-
-        write.then(() => {
-            if (this._isCurrentRow(row) && this._writeGenerations.get(id) === generation)
-                row.setOnline(fraction);
-        }).catch(error => {
-            if (isCancelled(error) || !this._isCurrentRow(row) ||
-                this._writeGenerations.get(id) !== generation)
-                return;
-
-            row.setWriteError(error.message);
-            console.error(`Lumen: brightness update failed: ${error.message}`);
-        }).finally(() => {
-            if (this._writeQueues.get(id) === write)
-                this._writeQueues.delete(id);
-        });
-    }
-
-    async refreshValues() {
-        if (this._isShutdown || this._rows.length === 0)
-            return;
-
-        this._refreshCancellable?.cancel();
-        const cancellable = new Gio.Cancellable();
-        this._refreshCancellable = cancellable;
-        const refreshGeneration = ++this._refreshGeneration;
-        const scanGeneration = this._scanGeneration;
-
-        for (const row of [...this._rows]) {
-            if (!this._isCurrentRow(row, scanGeneration, refreshGeneration))
-                return;
-            if (row.dragging || row.pendingWrite)
-                continue;
-
-            if (row.desc.kind === 'internal') {
-                const fraction = readInternalBrightness(row.desc.device);
-                if (fraction === null)
-                    row.setUnavailable('The built-in display brightness could not be read.');
-                else
-                    row.setOnline(fraction);
-                continue;
-            }
-
-            try {
-                const value = await readBrightness(row.desc, cancellable);
-                if (!this._isCurrentRow(row, scanGeneration, refreshGeneration))
-                    return;
-                if (!row.dragging && !row.pendingWrite)
-                    row.setOnline(value.frac);
-            } catch (error) {
-                if (isCancelled(error))
-                    return;
-                if (this._isCurrentRow(row, scanGeneration, refreshGeneration)) {
-                    row.setUnavailable(error.message);
-                    console.debug(`Lumen: brightness read failed: ${error.message}`);
-                }
-            }
+    step(direction) {
+        const delta = (direction * this.stepPercent) / 100;
+        const nextValue = Math.min(1, Math.max(0, this._slider.value + delta));
+        if (nextValue !== this._slider.value) {
+            this._slider.value = nextValue;
+            this.emit('changed', nextValue);
         }
-    }
-
-    _isCurrentScan(scanGeneration) {
-        return !this._isShutdown && scanGeneration === this._scanGeneration;
-    }
-
-    _isCurrentRow(row, scanGeneration = this._scanGeneration,
-        refreshGeneration = this._refreshGeneration) {
-        return this._isCurrentScan(scanGeneration) &&
-            refreshGeneration === this._refreshGeneration && this._rows.includes(row);
-    }
-
-    _onPanelScroll(event) {
-        const direction = event.get_scroll_direction();
-        if (direction !== Clutter.ScrollDirection.UP &&
-            direction !== Clutter.ScrollDirection.DOWN)
-            return Clutter.EVENT_PROPAGATE;
-
-        const row = this._lastRow?.sensitive
-            ? this._lastRow
-            : this._rows.find(candidate => candidate.sensitive);
-        if (!row)
-            return Clutter.EVENT_PROPAGATE;
-
-        const delta = direction === Clutter.ScrollDirection.UP
-            ? row.stepPercent
-            : -row.stepPercent;
-        row.value += delta / 100;
-        return Clutter.EVENT_STOP;
-    }
-
-    _dropPlaceholder() {
-        if (this._placeholder) {
-            this._placeholder.destroy();
-            this._placeholder = null;
-        }
-    }
-
-    _clearRows() {
-        for (const timeout of this._timeouts.values())
-            GLib.source_remove(timeout);
-        this._timeouts.clear();
-        this._section.removeAll();
-        this._dropPlaceholder();
-        this._rows = [];
-        this._lastRow = null;
-        this._internal = null;
-    }
-
-    shutdown() {
-        if (this._isShutdown)
-            return;
-
-        this._isShutdown = true;
-        this._scanGeneration++;
-        this._refreshGeneration++;
-        this._scanCancellable?.cancel();
-        this._refreshCancellable?.cancel();
-        this._cancellable.cancel();
-        this._clearRows();
-        this._settings.disconnect(this._internalId);
-        this._settings.disconnect(this._stepId);
-        this.menu.disconnect(this._openId);
-        this.disconnect(this._scrollId);
     }
 });
 
 export default class MonitorBrightnessExtension extends Extension {
     enable() {
-        this._indicator = new MonitorBrightnessIndicator(this);
-        Main.panel.addToStatusArea(this.uuid, this._indicator);
+        this._monitors = [];
+        this._rows = [];
+        this._activeRow = null;
+        this._writeDebounceSourceId = 0;
+        this._writeCancellable = null;
+        this._readCancellable = null;
+        this._detectCancellable = null;
+
+        this._settings = this.getSettings();
+        this._stepSettingId = this._settings.connect('changed::scroll-step', () => {
+            this._applyStepPercent();
+        });
+        this._showInternalSettingId = this._settings.connect('changed::show-internal', () => {
+            this._refreshMonitors();
+        });
+
+        this._indicator = new PanelMenu.Button(0.0, 'Lumen', false);
+        this._icon = new St.Icon({
+            icon_name: 'display-brightness-symbolic',
+            style_class: 'system-status-icon',
+        });
+        this._indicator.add_child(this._icon);
+
+        this._panelScrollEventId = this._indicator.connect('scroll-event', (_actor, event) => {
+            const direction = event.get_scroll_direction();
+            let stepDir = 0;
+            if (direction === Clutter.ScrollDirection.UP)
+                stepDir = 1;
+            else if (direction === Clutter.ScrollDirection.DOWN)
+                stepDir = -1;
+            else if (direction === Clutter.ScrollDirection.SMOOTH) {
+                const [, dy] = event.get_scroll_delta();
+                if (dy < 0)
+                    stepDir = 1;
+                else if (dy > 0)
+                    stepDir = -1;
+            }
+
+            if (stepDir === 0)
+                return Clutter.EVENT_PROPAGATE;
+
+            const targetRow = this._activeRow || this._rows[0];
+            if (targetRow)
+                targetRow.step(stepDir);
+
+            return Clutter.EVENT_STOP;
+        });
+
+        this._menuOpenEventId = this._indicator.menu.connect('open-state-changed', (_menu, open) => {
+            if (open)
+                this._readAllBrightness();
+        });
+
+        this._monitorsChangedId = Main.layoutManager.connect('monitors-changed', () => {
+            this._refreshMonitors();
+        });
+
+        Main.panel.addToStatusArea(this.metadata.uuid, this._indicator);
+        this._refreshMonitors();
     }
 
     disable() {
-        if (!this._indicator)
+        if (this._writeDebounceSourceId) {
+            GLib.source_remove(this._writeDebounceSourceId);
+            this._writeDebounceSourceId = 0;
+        }
+
+        this._cancelOperations();
+
+        if (this._stepSettingId && this._settings) {
+            this._settings.disconnect(this._stepSettingId);
+            this._stepSettingId = 0;
+        }
+        if (this._showInternalSettingId && this._settings) {
+            this._settings.disconnect(this._showInternalSettingId);
+            this._showInternalSettingId = 0;
+        }
+        this._settings = null;
+
+        if (this._monitorsChangedId) {
+            Main.layoutManager.disconnect(this._monitorsChangedId);
+            this._monitorsChangedId = 0;
+        }
+
+        if (this._panelScrollEventId && this._indicator) {
+            this._indicator.disconnect(this._panelScrollEventId);
+            this._panelScrollEventId = 0;
+        }
+
+        if (this._menuOpenEventId && this._indicator?.menu) {
+            this._indicator.menu.disconnect(this._menuOpenEventId);
+            this._menuOpenEventId = 0;
+        }
+
+        if (this._indicator) {
+            this._indicator.destroy();
+            this._indicator = null;
+        }
+
+        this._monitors = [];
+        this._rows = [];
+        this._activeRow = null;
+    }
+
+    _applyStepPercent() {
+        const step = this._settings ? this._settings.get_int('scroll-step') : 5;
+        for (const row of this._rows)
+            row.stepPercent = step;
+    }
+
+    _cancelOperations() {
+        if (this._detectCancellable) {
+            this._detectCancellable.cancel();
+            this._detectCancellable = null;
+        }
+
+        if (this._readCancellable) {
+            this._readCancellable.cancel();
+            this._readCancellable = null;
+        }
+
+        if (this._writeCancellable) {
+            this._writeCancellable.cancel();
+            this._writeCancellable = null;
+        }
+    }
+
+    async _refreshMonitors() {
+        this._cancelOperations();
+
+        this._indicator.menu.removeAll();
+        this._rows = [];
+        this._monitors = [];
+
+        const loadingItem = new PopupMenu.PopupMenuItem('Detecting displays...', {reactive: false});
+        this._indicator.menu.addMenuItem(loadingItem);
+
+        const detectCancellable = new Gio.Cancellable();
+        this._detectCancellable = detectCancellable;
+
+        let ddcMonitors = [];
+        try {
+            ddcMonitors = await detectMonitors(detectCancellable);
+        } catch (e) {
+            if (!isCancelled(e))
+                console.warn(`Lumen: ddcutil detection failed: ${e.message}`);
+        }
+
+        if (detectCancellable.is_cancelled())
             return;
 
-        this._indicator.shutdown();
-        this._indicator.destroy();
-        this._indicator = null;
+        const showInternal = this._settings ? this._settings.get_boolean('show-internal') : true;
+        const backlightPath = showInternal ? findInternalBacklight() : null;
+        if (backlightPath) {
+            ddcMonitors.unshift({
+                bus: null,
+                label: 'Built-in Display',
+                display: 0,
+                isBacklight: true,
+                backlightPath,
+            });
+        }
+
+        this._indicator.menu.removeAll();
+
+        if (ddcMonitors.length === 0) {
+            const emptyItem = new PopupMenu.PopupMenuItem('No supported displays found', {reactive: false});
+            this._indicator.menu.addMenuItem(emptyItem);
+            this._addRefreshItem();
+            return;
+        }
+
+        this._monitors = ddcMonitors;
+
+        for (const desc of ddcMonitors) {
+            const row = new BrightnessRow(desc);
+            this._rows.push(row);
+            this._indicator.menu.addMenuItem(row);
+
+            row.connect('changed', (_row, value) => {
+                this._activeRow = row;
+                row.pendingWrite = true;
+                row._valueLabel.text = `${Math.round(value * 100)}%`;
+                this._scheduleWrite();
+            });
+        }
+
+        this._applyStepPercent();
+        this._addRefreshItem();
+        this._readAllBrightness();
+    }
+
+    _addRefreshItem() {
+        this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        const refreshItem = new PopupMenu.PopupMenuItem('Refresh displays');
+        refreshItem.connect('activate', () => {
+            this._refreshMonitors();
+        });
+        this._indicator.menu.addMenuItem(refreshItem);
+
+        const settingsItem = new PopupMenu.PopupMenuItem('Settings');
+        settingsItem.connect('activate', () => {
+            this.openPreferences();
+        });
+        this._indicator.menu.addMenuItem(settingsItem);
+    }
+
+    async _readAllBrightness() {
+        if (this._readCancellable)
+            this._readCancellable.cancel();
+
+        const readCancellable = new Gio.Cancellable();
+        this._readCancellable = readCancellable;
+
+        for (let i = 0; i < this._monitors.length; i++) {
+            const desc = this._monitors[i];
+            const row = this._rows[i];
+
+            if (!row || row.dragging || row.pendingWrite)
+                continue;
+
+            try {
+                let pct = null;
+                if (desc.isBacklight)
+                    pct = readInternalBrightness(desc.backlightPath);
+                else
+                    pct = await readBrightness(desc.bus, readCancellable);
+
+                if (readCancellable.is_cancelled())
+                    return;
+
+                if (pct !== null && !row.dragging && !row.pendingWrite)
+                    row.setPercent(pct);
+            } catch (e) {
+                if (isCancelled(e))
+                    return;
+                console.warn(`Lumen: failed reading brightness for ${desc.label}: ${e.message}`);
+            }
+        }
+    }
+
+    _scheduleWrite() {
+        if (this._writeDebounceSourceId)
+            GLib.source_remove(this._writeDebounceSourceId);
+
+        this._writeDebounceSourceId = GLib.timeout_add(
+            GLib.PRIORITY_DEFAULT,
+            SET_DEBOUNCE_MS,
+            () => {
+                this._writeDebounceSourceId = 0;
+                this._flushWrites();
+                return GLib.SOURCE_REMOVE;
+            }
+        );
+    }
+
+    async _flushWrites() {
+        if (this._writeCancellable)
+            this._writeCancellable.cancel();
+
+        const writeCancellable = new Gio.Cancellable();
+        this._writeCancellable = writeCancellable;
+
+        for (let i = 0; i < this._monitors.length; i++) {
+            const desc = this._monitors[i];
+            const row = this._rows[i];
+
+            if (!row || !row.pendingWrite)
+                continue;
+
+            row.pendingWrite = false;
+            const pct = Math.round(row._slider.value * 100);
+
+            try {
+                if (desc.isBacklight)
+                    writeInternalBrightness(desc.backlightPath, pct);
+                else
+                    await writeBrightness(desc.bus, pct, writeCancellable);
+            } catch (e) {
+                if (!isCancelled(e))
+                    console.warn(`Lumen: failed setting brightness for ${desc.label}: ${e.message}`);
+            }
+        }
     }
 }

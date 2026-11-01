@@ -33,7 +33,7 @@ struct LumenApp: App {
                         Slider(value: $display.brightness, in: 0...100, step: 1) { editing in
                             if !editing { displays.set(display) }
                         }
-                        .onChange(of: display.brightness) { _ in displays.scheduleSet(display) }
+                        .onChange(of: display.brightness) { newValue in displays.scheduleSet(display, to: newValue) }
                     }
                 }
                 Divider()
@@ -44,40 +44,55 @@ struct LumenApp: App {
                 }
             }
             .padding(14).frame(width: 300)
-            .task { displays.refresh() }
-        }
-        .menuBarExtraStyle(.window)
+        }.menuBarExtraStyle(.window)
     }
 }
 
-struct Display: Identifiable {
+struct DisplayItem: Identifiable {
     let id: Int
-    var name: String
+    let name: String
     var brightness: Double
 }
 
-@MainActor final class DisplayStore: ObservableObject {
-    @Published var items: [Display] = []
-    @Published var error: String?
-    @Published var status = "Apple Silicon · DDC/CI"
+@MainActor
+final class DisplayStore: ObservableObject {
+    @Published var items: [DisplayItem] = []
+    @Published var status: String = "Scanning displays..."
+    @Published var error: String? = nil
+
     private var pending: [Int: DispatchWorkItem] = [:]
+
+    init() { refresh() }
 
     func refresh() {
         do {
             let output = try run(["display", "list"])
-            let names = output.components(separatedBy: .newlines).compactMap { line -> String? in
+            let parsed = output.components(separatedBy: .newlines).compactMap { line -> (id: Int, name: String)? in
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
-                guard let match = trimmed.range(of: #"^(\d+)\s*[-.):]\s*(.+)$"#, options: .regularExpression) else { return nil }
-                let parsed = String(trimmed[match])
-                let name = parsed.replacingOccurrences(of: #"^\d+\s*[-.):]\s*"#, with: "", options: .regularExpression)
-                return name.isEmpty ? nil : name
+                guard !trimmed.isEmpty else { return nil }
+                
+                guard let match = trimmed.range(of: #"^(?:\[?(\d+)\]?|Display\s+(\d+))[:\s-]+(.*)$"#, options: .regularExpression) else {
+                    return nil
+                }
+                let matchedStr = String(trimmed[match])
+                let idDigits = matchedStr.components(separatedBy: CharacterSet.decimalDigits.inverted).filter { !$0.isEmpty }
+                guard let firstId = idDigits.first, let num = Int(firstId) else { return nil }
+                let rawName = trimmed.replacingOccurrences(of: #"^(?:\[?\d+\]?|Display\s+\d+)[:\s-]+"#, with: "", options: .regularExpression)
+                    .replacingOccurrences(of: #"\s*\(.*\)$"#, with: "", options: .regularExpression)
+                    .trimmingCharacters(in: .whitespaces)
+                return (id: num, name: rawName.isEmpty ? "Display \(num)" : rawName)
             }
-            items = try names.enumerated().map { index, name in
-                let id = index + 1
-                let value = try run(["display", String(id), "get", "luminance"])
-                guard let percent = value.range(of: #"\d+(?:\.\d+)?"#, options: .regularExpression)
-                    .flatMap({ Double(value[$0]) }) else { throw BackendError.unreadable(name) }
-                return Display(id: id, name: name, brightness: min(100, max(0, percent)))
+            
+            items = parsed.compactMap { display in
+                let percent: Double
+                if let value = try? run(["display", String(display.id), "get", "luminance"]),
+                   let parsedVal = value.range(of: #"\d+(?:\.\d+)?"#, options: .regularExpression)
+                    .flatMap({ Double(value[$0]) }) {
+                    percent = min(100, max(0, parsedVal))
+                } else {
+                    percent = 50.0
+                }
+                return DisplayItem(id: display.id, name: display.name, brightness: percent)
             }
             error = nil
             status = items.isEmpty ? "Waiting for a DDC/CI display" : "\(items.count) display(s)"
@@ -88,21 +103,29 @@ struct Display: Identifiable {
         }
     }
 
-    func scheduleSet(_ display: Display) {
+    func scheduleSet(_ display: DisplayItem, to newValue: Double) {
         pending[display.id]?.cancel()
-        let work = DispatchWorkItem { [weak self] in self?.set(display) }
+        var target = display
+        target.brightness = newValue
+        let work = DispatchWorkItem { [weak self] in self?.set(target) }
         pending[display.id] = work
         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(180), execute: work)
     }
 
-    func set(_ display: Display) {
-        do {
-            _ = try run(["display", String(display.id), "set", "luminance", String(Int(display.brightness.rounded()))])
-            error = nil
-        } catch { self.error = error.localizedDescription }
+    func set(_ display: DisplayItem) {
+        let id = display.id
+        let val = String(Int(display.brightness.rounded()))
+        Task.detached { [weak self] in
+            do {
+                _ = try self?.run(["display", String(id), "set", "luminance", val])
+                await MainActor.run { self?.error = nil }
+            } catch {
+                await MainActor.run { self?.error = error.localizedDescription }
+            }
+        }
     }
 
-    private func run(_ arguments: [String]) throws -> String {
+    private nonisolated func run(_ arguments: [String]) throws -> String {
         let candidates = ["/opt/homebrew/bin/m1ddc", "/usr/local/bin/m1ddc"]
         guard let path = candidates.first(where: FileManager.default.isExecutableFile(atPath:)) else {
             throw BackendError.missingTool

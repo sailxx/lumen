@@ -12,6 +12,7 @@ BuildArch:      noarch
 Source0:        %{name}-%{version}.tar.gz
 
 Requires:       gnome-shell >= 45
+Requires:       i2c-tools
 Requires:       ddcutil >= 1.4
 
 %description
@@ -20,10 +21,10 @@ slider for each controllable display. The built-in laptop panel is managed
 through logind; external displays are controlled over DDC/CI with ddcutil.
 
 The package also ships:
- * the GSettings schema, installed system-wide;
- * a udev rule granting the active session access to /dev/i2c-* (uaccess),
-   so DDC/CI works without root and without the i2c group;
- * a modules-load config that loads the i2c-dev kernel module at boot.
+* the GSettings schema, installed system-wide;
+* a udev rule granting the active session access to /dev/i2c-* (uaccess),
+  so DDC/CI works without root and without the i2c group;
+* a modules-load config that loads the i2c-dev kernel module at boot.
 
 The user interface is in English.
 
@@ -70,10 +71,14 @@ install -Dm 0644 i2c-dev.conf \
 
 %post
 glib-compile-schemas %{_datadir}/glib-2.0/schemas/ &>/dev/null || :
+udevadm control --reload-rules &>/dev/null || :
+udevadm trigger --subsystem-match=i2c-dev &>/dev/null || :
 
 %postun
 glib-compile-schemas %{_datadir}/glib-2.0/schemas/ &>/dev/null || :
+udevadm control --reload-rules &>/dev/null || :
+udevadm trigger --subsystem-match=i2c-dev &>/dev/null || :
 
 %changelog
-* Sun Nov 01 2026 Vlad <vlad@localhost> - 2-1
+* Sun Nov 01 2026 Vlad <vlad@localhost> - 3-1
 - Improve error handling, display refresh behavior, and package consistency.
