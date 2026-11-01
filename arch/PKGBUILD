@@ -1,0 +1,23 @@
+pkgname=gnome-shell-extension-lumen
+pkgver=2
+pkgrel=1
+pkgdesc='Per-display brightness controls for GNOME Shell'
+arch=('any')
+url='https://github.com/sailxx/lumen'
+license=('MIT')
+depends=('gnome-shell>=45' 'ddcutil>=1.4' 'i2c-tools' 'glib2')
+source=("lumen::git+https://github.com/sailxx/lumen.git#branch=main")
+sha256sums=('SKIP')
+install=lumen.install
+
+package() {
+  local root="$srcdir/lumen"
+  local dest="$pkgdir/usr/share/gnome-shell/extensions/lumen@vlad"
+  install -d "$dest/schemas"
+  while IFS= read -r entry; do
+    [[ -z "$entry" || "$entry" == \#* ]] && continue
+    install -D -m644 "$root/extension/$entry" "$dest/$entry"
+  done < "$root/extension/extension-files.txt"
+  install -Dm644 "$root/extension/schemas/org.gnome.shell.extensions.monitor-brightness.gschema.xml" \
+    "$pkgdir/usr/share/glib-2.0/schemas/org.gnome.shell.extensions.monitor-brightness.gschema.xml"
+}

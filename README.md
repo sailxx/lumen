@@ -66,7 +66,7 @@ Lumen runs as a GNOME Shell extension. It has no background daemon and makes no 
 
 ### Linux setup
 
-The setup script supports Fedora (`dnf`), Debian/Ubuntu (`apt-get`), Arch Linux (`pacman`) and openSUSE (`zypper`). It installs `ddcutil` and `i2c-tools`, enables `i2c-dev`, and configures active-session access to I2C devices if the system has no ddcutil udev rule. Review the script before running it.
+The setup script supports Fedora (`dnf`), Debian/Ubuntu (`apt-get`), Arch Linux (`pacman`), openSUSE (`zypper`), Alpine (`apk`) and Gentoo (`emerge`). It installs `ddcutil` and `i2c-tools`, enables `i2c-dev`, and configures active-session access to I2C devices if the system has no ddcutil udev rule. Use `sudo` or `doas`. Alpine systems without `udevadm` need I2C permissions configured with their device manager. Review the script before running it.
 
 ```bash
 git clone https://github.com/sailxx/lumen.git
@@ -102,6 +102,33 @@ gnome-extensions enable lumen@vlad
 ```
 
 The RPM installs the extension and schema system-wide, adds the udev rule and loads `i2c-dev` at boot. Restart GNOME Shell after installation.
+
+### Debian package
+
+Build on Debian or Ubuntu with `dpkg-dev` and `glib2.0-dev-bin` installed:
+
+```bash
+./deb/build-deb.sh
+sudo apt install ./deb/gnome-shell-extension-lumen_*_all.deb
+gnome-extensions enable lumen@vlad
+```
+
+### Arch package
+
+Build the `arch/PKGBUILD` with `makepkg -si` from the `arch` directory. The universal extension archive and `extension/install.sh` also work on other GNOME distributions with GNOME Shell 45–50.
+
+### macOS menu bar app (Apple Silicon)
+
+Lumen for macOS is a separate native menu bar app for external DDC/CI monitors. It uses the upstream `m1ddc` command-line backend and does not control the built-in Mac display. Install Xcode Command Line Tools and Homebrew, then run:
+
+```bash
+brew install m1ddc
+git clone https://github.com/sailxx/lumen.git
+cd lumen
+./macos/install.sh
+```
+
+This app currently requires Apple Silicon and macOS 13 or later. Intel Macs and internal-display brightness are not supported by this app. Monitor, dock and DDC/CI compatibility varies.
 
 </details>
 

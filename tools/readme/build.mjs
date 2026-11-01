@@ -134,11 +134,11 @@ function makeButton({ width, label, symbol, variant = 'outline' }) {
   const accent = variant === 'primary' ? '#061321' : '#56B6FF';
   let icon = '';
   if (symbol === 'download') {
-    icon = `<path d="M20 13v11m-6-5 6 6 6-6M14 29h12" fill="none" stroke="${accent}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+    icon = `<path d="M20 21v11m-6-5 6 6 6-6M14 37h12" fill="none" stroke="${accent}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
   } else if (symbol === 'package') {
-    icon = `<path d="m20 15 7 4v8l-7 4-7-4v-8l7-4Z" fill="none" stroke="${accent}" stroke-width="1.6" stroke-linejoin="round"/><path d="m13 19 7 4 7-4m-7 4v8" fill="none" stroke="${accent}" stroke-width="1.4" stroke-linejoin="round"/>`;
+    icon = `<path d="m20 19 7 4v8l-7 4-7-4v-8l7-4Z" fill="none" stroke="${accent}" stroke-width="1.6" stroke-linejoin="round"/><path d="m13 23 7 4 7-4m-7 4v8" fill="none" stroke="${accent}" stroke-width="1.4" stroke-linejoin="round"/>`;
   } else {
-    icon = `<path d="M20 14v13m-6-6h12m-9-9 3 3 3-3" fill="none" stroke="${accent}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+    icon = `<path d="M20 21v13m-6-6h12m-9-9 3 3 3-3" fill="none" stroke="${accent}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
   const body = reveal(`${rect(1, 1, width - 2, 54, fill, 15, border, 1.4)}<path d="M16 2h${width - 32}" stroke="${variant === 'primary' ? '#FFFFFF' : '#5E6A79'}" stroke-opacity=".28" stroke-linecap="round"/>${icon}${text(48, 34, label, 13, { face: 'golos', weight: 650, fill: ink })}<circle cx="${width - 14}" cy="28" r="2" fill="${accent}" class="glint"/>`);
   return rootSvg(width, 56, label, body, { glow: false });
