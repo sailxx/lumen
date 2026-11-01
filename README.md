@@ -6,13 +6,17 @@
 
 **Per-display brightness controls for GNOME Shell.** Adjust a built-in laptop display and external DDC/CI monitors from the top panel.
 
+<a href="README.md">English</a> · <a href="README.ru.md">Русский</a> · <a href="README.es.md">Español</a> · <a href="README.de.md">Deutsch</a> · <a href="README.fr.md">Français</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.ja.md">日本語</a>
+
 <img src="assets/readme/badges-en.svg" width="100%" alt="Lumen version, GNOME Shell support, DDC/CI, Fedora RPM packaging, and MIT license">
 
 <br>
 
 <img src="assets/readme/hero-en.svg" width="100%" alt="Brightness, per screen: Lumen's GNOME panel preview with independent controls for a laptop display and an external monitor">
 
-<a href="#install"><img src="assets/readme/btn-zip-en.svg" width="190" alt="Install Lumen"></a>&nbsp;&nbsp;<a href="#install"><img src="assets/readme/btn-rpm-en.svg" width="190" alt="Build a Fedora RPM"></a>&nbsp;&nbsp;<a href="https://github.com/sailxx/lumen/releases/latest"><img src="assets/readme/btn-new-en.svg" width="190" alt="View the latest release"></a>
+<img src="assets/readme/benefits-en.svg" width="100%" alt="Independent brightness per display, built-in and DDC/CI support, GNOME panel controls, scroll adjustment, no background service, and no root access at runtime">
+
+<a href="#install"><img src="assets/readme/btn-zip-en.svg" height="50" alt="Install Lumen"></a>&nbsp;&nbsp;<a href="#install"><img src="assets/readme/btn-rpm-en.svg" height="50" alt="Build a Fedora RPM"></a>&nbsp;&nbsp;<a href="https://github.com/sailxx/lumen/releases/latest"><img src="assets/readme/btn-new-en.svg" height="50" alt="View the latest release"></a>
 
 </div>
 
@@ -155,6 +159,6 @@ If setup created `/etc/modules-load.d/lumen-i2c-dev.conf` or `/etc/udev/rules.d/
 
 **Lumen** · Every display, its own brightness control.
 
-MIT License · GNOME Shell 45–50 · English documentation
+MIT License · GNOME Shell 45–50 · README in 8 languages
 
 </div>

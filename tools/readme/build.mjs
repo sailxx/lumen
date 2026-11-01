@@ -40,7 +40,7 @@ function pill(x, y, w, label, { bright = false, mono = false, height = 28 } = {}
   const fill = bright ? 'url(#blue)' : '#121821';
   const stroke = bright ? '#55B2FF' : '#293441';
   const color = bright ? '#06111D' : '#B9C7D7';
-  return `${rect(x, y, w, height, fill, height / 2, stroke, 1)}${circle(x + 13, y + height / 2, 2.5, bright ? '#071522' : '#2E9BFF')}${text(x + 24, y + height / 2 + 4, label, 10.5, { face: mono ? 'mono' : 'inter', weight: 600, fill: color, spacing: mono ? .3 : 0 })}`;
+  return `${rect(x, y, w, height, fill, height / 2, stroke, 1)}${circle(x + 13, y + height / 2, 2.5, bright ? '#071522' : '#2E9BFF', bright ? 'class="glint"' : '')}${text(x + 24, y + height / 2 + 4, label, 10.5, { face: mono ? 'mono' : 'inter', weight: 600, fill: color, spacing: mono ? .3 : 0 })}`;
 }
 
 function rootSvg(width, height, label, body, { glow = true } = {}) {
@@ -59,10 +59,10 @@ function rootSvg(width, height, label, body, { glow = true } = {}) {
 @font-face{font-family:Golos;src:url(data:font/woff2;base64,%%GOLOS%%) format('woff2');font-weight:100 900}
 @font-face{font-family:Mono;src:url(data:font/woff2;base64,%%MONO%%) format('woff2');font-weight:100 900}
 .Inter{font-family:Inter,'Segoe UI',sans-serif}.Golos{font-family:Golos,Inter,sans-serif}.Mono{font-family:Mono,'Cascadia Code',monospace}
-.reveal{opacity:0;transform:translateY(12px);animation:arrive 680ms cubic-bezier(.16,1,.3,1) forwards}
+.reveal{opacity:1;transform:none;animation:arrive 680ms cubic-bezier(.16,1,.3,1) backwards}
 .trace{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 700ms cubic-bezier(.16,1,.3,1) forwards}
 .glint{animation:glint 2.8s ease-in-out infinite}
-@keyframes arrive{to{opacity:1;transform:translateY(0)}}
+@keyframes arrive{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes draw{to{stroke-dashoffset:0}}
 @keyframes glint{0%,100%{opacity:.55}50%{opacity:1}}
 @media(prefers-reduced-motion:reduce){.reveal,.trace,.glint{animation:none;opacity:1;transform:none;stroke-dashoffset:0}}
@@ -109,6 +109,24 @@ function makeBadges() {
   return rootSvg(880, 62, 'Lumen version, GNOME Shell support, DDC/CI, Fedora RPM packaging, and MIT license', body, { glow: false });
 }
 
+function makeBenefits() {
+  const rows = [
+    { y: 8, items: [
+      { x: 82, w: 250, label: 'ONE CONTROL PER DISPLAY', bright: true },
+      { x: 344, w: 224, label: 'BUILT-IN + DDC/CI' },
+      { x: 580, w: 218, label: 'NATIVE GNOME PANEL' },
+    ] },
+    { y: 48, items: [
+      { x: 96, w: 204, label: 'SCROLL TO ADJUST' },
+      { x: 312, w: 246, label: 'NO BACKGROUND DAEMON' },
+      { x: 570, w: 218, label: 'NO ROOT AT RUNTIME' },
+    ] },
+  ];
+  const body = rows.flatMap((row, rowIndex) => row.items.map((item, index) =>
+    reveal(pill(item.x, row.y, item.w, item.label, { bright: item.bright, height: 32 }), rowIndex * 260 + index * 75)));
+  return rootSvg(880, 88, 'Six Lumen benefits: independent display controls, built-in and DDC/CI support, a native GNOME panel, scroll adjustment, no daemon, and no root access while running', body.join(''), { glow: false });
+}
+
 function makeButton({ width, label, symbol, variant = 'outline' }) {
   const fill = variant === 'primary' ? 'url(#blue)' : '#10151D';
   const border = variant === 'primary' ? '#5DB9FF' : '#303A47';
@@ -116,13 +134,13 @@ function makeButton({ width, label, symbol, variant = 'outline' }) {
   const accent = variant === 'primary' ? '#061321' : '#56B6FF';
   let icon = '';
   if (symbol === 'download') {
-    icon = `<path d="M20 15v7m-4-4 4 4 4-4M16 27h8" fill="none" stroke="${accent}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+    icon = `<path d="M20 13v11m-6-5 6 6 6-6M14 29h12" fill="none" stroke="${accent}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
   } else if (symbol === 'package') {
     icon = `<path d="m20 15 7 4v8l-7 4-7-4v-8l7-4Z" fill="none" stroke="${accent}" stroke-width="1.6" stroke-linejoin="round"/><path d="m13 19 7 4 7-4m-7 4v8" fill="none" stroke="${accent}" stroke-width="1.4" stroke-linejoin="round"/>`;
   } else {
     icon = `<path d="M20 14v13m-6-6h12m-9-9 3 3 3-3" fill="none" stroke="${accent}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
-  const body = reveal(`${rect(1, 1, width - 2, 54, fill, 15, border, 1.4)}<path d="M16 2h${width - 32}" stroke="${variant === 'primary' ? '#FFFFFF' : '#5E6A79'}" stroke-opacity=".28" stroke-linecap="round"/>${icon}${text(48, 34, label, 13, { face: 'golos', weight: 650, fill: ink })}<circle cx="${width - 22}" cy="28" r="2" fill="${accent}" class="glint"/>`);
+  const body = reveal(`${rect(1, 1, width - 2, 54, fill, 15, border, 1.4)}<path d="M16 2h${width - 32}" stroke="${variant === 'primary' ? '#FFFFFF' : '#5E6A79'}" stroke-opacity=".28" stroke-linecap="round"/>${icon}${text(48, 34, label, 13, { face: 'golos', weight: 650, fill: ink })}<circle cx="${width - 14}" cy="28" r="2" fill="${accent}" class="glint"/>`);
   return rootSvg(width, 56, label, body, { glow: false });
 }
 
@@ -221,9 +239,10 @@ function makeInstall() {
 
 const artifacts = new Map();
 artifacts.set('badges-en.svg', makeBadges());
-artifacts.set('btn-zip-en.svg', makeButton({ width: 240, label: 'Install from zip', symbol: 'download', variant: 'primary' }));
-artifacts.set('btn-rpm-en.svg', makeButton({ width: 250, label: 'Build Fedora RPM', symbol: 'package' }));
-artifacts.set('btn-new-en.svg', makeButton({ width: 224, label: 'Latest release', symbol: 'release' }));
+artifacts.set('benefits-en.svg', makeBenefits());
+artifacts.set('btn-zip-en.svg', makeButton({ width: 180, label: 'Install from zip', symbol: 'download', variant: 'primary' }));
+artifacts.set('btn-rpm-en.svg', makeButton({ width: 180, label: 'Build Fedora RPM', symbol: 'package' }));
+artifacts.set('btn-new-en.svg', makeButton({ width: 180, label: 'Latest release', symbol: 'release' }));
 artifacts.set('hero-en.svg', makeHero());
 artifacts.set('features-en.svg', makeFeatures());
 artifacts.set('how-en.svg', makeHow());
