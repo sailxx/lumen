@@ -6,15 +6,11 @@
 
 **Per-display brightness controls for GNOME Shell.** Adjust a built-in laptop display and external DDC/CI monitors from the top panel.
 
-<img src="https://img.shields.io/badge/GNOME_Shell-45%E2%80%9350-2E9BFF" alt="GNOME Shell 45–50">
-<img src="https://img.shields.io/badge/Linux-GNOME-2E9BFF" alt="Linux GNOME">
-<img src="https://img.shields.io/badge/External_displays-DDC%2FCI-2E9BFF" alt="External displays use DDC/CI">
-<img src="https://img.shields.io/badge/Fedora-RPM-2E9BFF" alt="Fedora RPM packaging">
-<img src="https://img.shields.io/badge/license-MIT-2E9BFF" alt="MIT license">
+<img src="assets/readme/badges-en.svg" width="100%" alt="Lumen version, GNOME Shell support, DDC/CI, Fedora RPM packaging, and MIT license">
 
 <br>
 
-<img src="assets/readme/hero-en.svg" width="100%" alt="Lumen's GNOME panel menu with brightness controls for a built-in display and an external monitor">
+<img src="assets/readme/hero-en.svg" width="100%" alt="Brightness, per screen: Lumen's GNOME panel preview with independent controls for a laptop display and an external monitor">
 
 <a href="#install"><img src="assets/readme/btn-zip-en.svg" height="52" alt="Install Lumen"></a>&nbsp;&nbsp;<a href="#install"><img src="assets/readme/btn-rpm-en.svg" height="52" alt="Build a Fedora RPM"></a>&nbsp;&nbsp;<a href="https://github.com/sailxx/lumen/releases/latest"><img src="assets/readme/btn-new-en.svg" height="52" alt="View the latest release"></a>
 
@@ -61,6 +57,8 @@ Lumen runs as a GNOME Shell extension. It has no background daemon and makes no 
 <a id="install"></a>
 
 <summary><b>Install</b></summary>
+
+<img src="assets/readme/install-en.svg" width="100%" alt="Three installation steps: prepare monitor access, install the extension, and enable it in GNOME Shell">
 
 ### Linux setup
 
@@ -153,22 +151,10 @@ If setup created `/etc/modules-load.d/lumen-i2c-dev.conf` or `/etc/udev/rules.d/
 
 </details>
 
-<details>
-<summary><b>Development</b></summary>
-
-```text
-extension/   GNOME Shell extension, preferences, schema, and zip packager
-rpm/         RPM spec, build script, udev rule, and module-load configuration
-assets/      Logo and README artwork
-docs/        Project design and implementation records
-```
-
-Build a local extension archive with `extension/package.sh`. Build the Fedora RPM with `rpm/build-rpm.sh`. The project license is MIT.
-
-</details>
-
 <div align="center">
 
-**Lumen** — every display, its own brightness control.
+**Lumen** · Every display, its own brightness control.
+
+MIT License · GNOME Shell 45–50 · English documentation
 
 </div>

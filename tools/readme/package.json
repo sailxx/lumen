@@ -1,0 +1,12 @@
+{
+  "name": "lumen-readme-artwork",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "subset-font": "^2.9.0"
+  }
+}

@@ -1,15 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <g stroke="#2E9BFF" stroke-width="13" stroke-linecap="round">
-    <line x1="184" y1="102" x2="204" y2="102"/>
-    <line x1="167.6" y1="141.6" x2="181.7" y2="155.7"/>
-    <line x1="128" y1="158" x2="128" y2="178"/>
-    <line x1="88.4" y1="141.6" x2="74.3" y2="155.7"/>
-    <line x1="72" y1="102" x2="52" y2="102"/>
-    <line x1="88.4" y1="62.4" x2="74.3" y2="48.3"/>
-    <line x1="128" y1="46" x2="128" y2="26"/>
-    <line x1="167.6" y1="62.4" x2="181.7" y2="48.3"/>
-  </g>
-  <circle cx="128" cy="102" r="42" fill="#2E9BFF"/>
-  <rect x="52" y="196" width="152" height="14" rx="7" fill="#17222E"/>
-  <circle cx="150" cy="203" r="17" fill="#2E9BFF" stroke="#FFFFFF" stroke-width="6"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Lumen display brightness logo">
+<defs><linearGradient id="surface" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#141B25"/><stop offset="1" stop-color="#07090D"/></linearGradient><linearGradient id="beam" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#80D0FF"/><stop offset="1" stop-color="#1678E8"/></linearGradient><radialGradient id="aura"><stop stop-color="#2188F6" stop-opacity=".35"/><stop offset="1" stop-color="#2188F6" stop-opacity="0"/></radialGradient></defs>
+<style>.pulse{animation:pulse 2.8s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.8}}@media(prefers-reduced-motion:reduce){.pulse{animation:none;opacity:.55}}</style>
+<rect x="8" y="8" width="240" height="240" rx="58" fill="url(#surface)" stroke="#2B3542" stroke-width="2"/>
+<circle class="pulse" cx="132" cy="114" r="92" fill="url(#aura)"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M59 55h138a10 10 0 0 1 10 10v95H49V65a10 10 0 0 1 10-10Z" stroke="url(#beam)" stroke-width="9"/>
+  <path d="M88 185h80m-40-25v25" stroke="#667487" stroke-width="8"/>
+  <path d="M75 128h106" stroke="#344152" stroke-width="10"/>
+  <path d="M75 128h62" stroke="url(#beam)" stroke-width="10"/>
+</g>
+<circle cx="137" cy="128" r="15" fill="#F7FBFF" stroke="#5CB8FF" stroke-width="6"/>
+<circle class="pulse" cx="137" cy="128" r="28" fill="none" stroke="#46A7FF" stroke-opacity=".34" stroke-width="2"/>
+<path d="M70 199h116" stroke="#1E2935" stroke-width="2" stroke-linecap="round"/>
 </svg>
