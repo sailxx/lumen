@@ -2,7 +2,7 @@
 # Build it from the repository's rpm/ directory with ./build-rpm.sh.
 
 Name:           gnome-shell-extension-lumen
-Version:        2
+Version:        3
 Release:        1%{?dist}
 Summary:        Lumen - per-monitor brightness sliders for GNOME Shell (DDC/CI)
 
