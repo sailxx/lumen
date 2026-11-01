@@ -1,73 +1,78 @@
 #!/usr/bin/env bash
-# Настройка управления яркостью ВНЕШНИХ мониторов (DDC/CI) на Fedora + GNOME.
-# Запускать НА FEDORA от обычного пользователя (sudo спросит сам, где нужно):
-#   chmod +x setup-monitor-brightness.sh && ./setup-monitor-brightness.sh
+set -Eeuo pipefail
 
-set -u
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-if [[ $EUID -eq 0 ]]; then
-  echo "Не запускай от root — скрипт сам использует sudo там, где нужно."
-  exit 1
+if (( EUID == 0 )); then
+    echo "Run this script as your regular user; it invokes sudo only when needed." >&2
+    exit 1
 fi
 
-echo "==> 1/5. Устанавливаю ddcutil и i2c-tools..."
-sudo dnf install -y ddcutil i2c-tools
+if ! command -v sudo >/dev/null 2>&1; then
+    echo "sudo is required to install packages and configure the system." >&2
+    exit 1
+fi
 
-echo "==> 2/5. Включаю модуль ядра i2c-dev (сейчас и после перезагрузки)..."
+echo "Installing ddcutil and i2c-tools..."
+if command -v dnf >/dev/null 2>&1; then
+    sudo dnf install -y ddcutil i2c-tools
+elif command -v apt-get >/dev/null 2>&1; then
+    sudo apt-get update
+    sudo apt-get install -y ddcutil i2c-tools
+elif command -v pacman >/dev/null 2>&1; then
+    sudo pacman -S --needed --noconfirm ddcutil i2c-tools
+elif command -v zypper >/dev/null 2>&1; then
+    sudo zypper --non-interactive install ddcutil i2c-tools
+else
+    echo "No supported package manager was found (dnf, apt-get, pacman, or zypper)." >&2
+    exit 1
+fi
+
+echo "Loading i2c-dev and enabling it at boot..."
 sudo modprobe i2c-dev
-echo 'i2c-dev' | sudo tee /etc/modules-load.d/i2c-dev.conf >/dev/null
+printf '%s\n' 'i2c-dev' | sudo tee /etc/modules-load.d/lumen-i2c-dev.conf >/dev/null
 
-echo "==> 3/5. Настраиваю права доступа к /dev/i2c-* ..."
-# Современный ddcutil ставит своё udev-правило (uaccess). Если его нет — создаём своё.
-if [ -f /usr/lib/udev/rules.d/60-ddcutil-i2c.rules ] || [ -f /usr/lib/udev/rules.d/60-ddcutil.rules ]; then
-  echo "    udev-правило ddcutil уже есть — отлично."
+has_ddcutil_rule=false
+for rule in \
+    /etc/udev/rules.d/60-ddcutil*.rules \
+    /usr/lib/udev/rules.d/60-ddcutil*.rules \
+    /lib/udev/rules.d/60-ddcutil*.rules \
+    /usr/share/udev/rules.d/60-ddcutil*.rules; do
+    if [[ -f "$rule" ]]; then
+        has_ddcutil_rule=true
+        break
+    fi
+done
+
+if [[ "$has_ddcutil_rule" == true ]]; then
+    echo "Found the udev permissions rule provided by ddcutil."
 else
-  echo 'KERNEL=="i2c-[0-9]*", DRIVERS=="i915|xe|amdgpu|nvidia|nouveau", TAG+="uaccess"' \
-    | sudo tee /etc/udev/rules.d/60-ddcutil-i2c.rules >/dev/null
-  sudo udevadm control --reload-rules
-  sudo udevadm trigger
-  echo "    Добавлено своё udev-правило с uaccess."
+    echo "Installing an active-session udev rule for I2C devices..."
+    sudo install -D -m 0644 "$SCRIPT_DIR/rpm/60-monitor-brightness-i2c.rules" \
+        /etc/udev/rules.d/60-monitor-brightness-i2c.rules
 fi
 
-# Классический запасной вариант — группа i2c.
-if getent group i2c >/dev/null; then
-  sudo usermod -aG i2c "$USER"
-  echo "    Пользователь добавлен в группу i2c (вступит в силу после перелогина)."
-fi
+sudo udevadm control --reload-rules
+sudo udevadm trigger --subsystem-match=i2c-dev
 
-echo "==> 4/5. Ищу мониторы (это занимает несколько секунд)..."
-sleep 2
+echo
 if ddcutil detect; then
-  echo "    Мониторы найдены."
+    echo "Display detection completed."
 else
-  echo "(!) Мониторы НЕ найдены. Частые причины:"
-  echo "    - В меню самого монитора выключен DDC/CI — включи его кнопками монитора"
-  echo "      (обычно: Menu -> System/Input -> DDC/CI -> On)."
-  echo "    - NVIDIA: нужно nvidia-drm.modeset=1 (см. README, раздел про NVIDIA)."
-  echo "    - Монитор через док/переходник — попробуй запустить 'ddcutil detect' ещё раз."
+    echo "No DDC/CI displays were detected yet. Check the monitor OSD and run 'ddcutil detect' again."
 fi
-
-echo "==> 5/5. Читаю текущую яркость (VCP code 10) со всех найденных мониторов..."
-sleep 2
-ddcutil getvcp 10 || true
 
 cat <<'EOF'
 
-==========================================================
-Почти готово! Осталось два шага:
+Setup is complete. Sign out and back in so the new device permissions apply.
+Then install the GNOME Shell extension:
 
-1) ВЫЙДИ из сеанса и зайди снова (или перезагрузись) —
-   иначе права на /dev/i2c-* ещё не применятся.
+  cd extension
+  ./install.sh
 
-2) Установи МОЁ расширение Lumen (Monitor Brightness) —
-   папка extension/ рядом с этим скриптом:
-       cd extension
-       ./install.sh
-   Дальше перезапусти GNOME Shell и включи расширение
-   (подробности — в README.md).
+Enable it after restarting GNOME Shell:
+  gnome-extensions enable lumen@vlad
 
-Быстрая проверка из терминала:
-   ddcutil setvcp 10 40        # яркость 40% (все мониторы / первый)
-   ddcutil setvcp 10 40 -d 2   # конкретно второй монитор
-==========================================================
+If detection fails, enable DDC/CI in the monitor's on-screen menu. With some
+NVIDIA drivers, modesetting may also be required.
 EOF

@@ -1,3 +1,2 @@
-# DDC/CI для активного сеанса: доступ к i2c-шинам видеокарт без root
-# и без группы i2c. Метка uaccess даёт права залогиненному пользователю.
+# Grant the active local session access to I2C devices for DDC/CI control.
 SUBSYSTEM=="i2c-dev", TAG+="uaccess"

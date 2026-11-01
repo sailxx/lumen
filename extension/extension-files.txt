@@ -1,0 +1,7 @@
+metadata.json
+extension.js
+ddcutil.js
+backlight.js
+prefs.js
+stylesheet.css
+schemas/org.gnome.shell.extensions.monitor-brightness.gschema.xml

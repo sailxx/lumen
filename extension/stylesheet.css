@@ -1,9 +1,17 @@
-/* Monitor Brightness (DDC/CI) */
+/* Lumen display brightness controls */
 
-.mb-name {
-    width: 170px;
+.lumen-name {
+    min-width: 150px;
+    max-width: 220px;
 }
 
-.mb-value {
-    width: 34px;
+.lumen-value {
+    width: 42px;
+    text-align: right;
+    opacity: 0.82;
+}
+
+.lumen-error {
+    color: #e01b24;
+    font-weight: bold;
 }

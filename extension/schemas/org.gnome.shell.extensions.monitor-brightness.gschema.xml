@@ -5,14 +5,14 @@
 
     <key name="show-internal" type="b">
       <default>true</default>
-      <summary>Показывать встроенный экран</summary>
-      <description>Добавлять в меню слайдер яркости встроенного экрана ноутбука (управление через logind, без root)</description>
+      <summary>Show built-in display</summary>
+      <description>Add the laptop display brightness control to the menu.</description>
     </key>
 
     <key name="scroll-step" type="i">
       <default>5</default>
-      <summary>Шаг прокрутки, %</summary>
-      <description>На сколько процентов менять яркость при прокрутке колесом мыши на иконке в панели или на строке слайдера</description>
+      <summary>Scroll step, percent</summary>
+      <description>Percentage change applied by each vertical scroll step.</description>
     </key>
 
   </schema>

@@ -34,21 +34,21 @@
   <!-- popup menu -->
   <rect x="820" y="124" width="340" height="240" rx="14" fill="#232833" stroke="#39404D" stroke-width="1.5"/>
   <!-- row 1 -->
-  <text x="842" y="168" font-size="15" fill="#E8EDF4">Laptop display</text>
-  <text x="1138" y="168" font-size="15" fill="#8F9BAB" text-anchor="end">70</text>
+  <text x="842" y="168" font-size="15" fill="#E8EDF4">Built-in display</text>
+  <text x="1138" y="168" font-size="15" fill="#8F9BAB" text-anchor="end">70%</text>
   <rect x="842" y="182" width="296" height="8" rx="4" fill="#3A4250"/>
   <rect x="842" y="182" width="207" height="8" rx="4" fill="#2E9BFF"/>
   <circle cx="1049" cy="186" r="9" fill="#FFFFFF" stroke="#2E9BFF" stroke-width="3"/>
   <!-- row 2 -->
   <text x="842" y="232" font-size="15" fill="#E8EDF4">DP-1 · DELL U2415</text>
-  <text x="1138" y="232" font-size="15" fill="#8F9BAB" text-anchor="end">45</text>
+  <text x="1138" y="232" font-size="15" fill="#8F9BAB" text-anchor="end">45%</text>
   <rect x="842" y="246" width="296" height="8" rx="4" fill="#3A4250"/>
   <rect x="842" y="246" width="133" height="8" rx="4" fill="#2E9BFF"/>
   <circle cx="975" cy="250" r="9" fill="#FFFFFF" stroke="#2E9BFF" stroke-width="3"/>
   <line x1="842" y1="278" x2="1138" y2="278" stroke="#39404D" stroke-width="1.5"/>
   <text x="842" y="308" font-size="15" fill="#CFD8E3">Refresh monitors</text>
   <text x="1138" y="308" font-size="15" fill="#8F9BAB" text-anchor="end">›</text>
-  <text x="842" y="336" font-size="15" fill="#CFD8E3">Settings</text>
+  <text x="842" y="336" font-size="15" fill="#CFD8E3">Preferences</text>
   <text x="1138" y="336" font-size="15" fill="#8F9BAB" text-anchor="end">›</text>
 
   <!-- cursor -->
@@ -68,5 +68,5 @@
     <path d="M802,303 L836,310"/>
   </g>
 
-  <text x="600" y="585" font-size="17" fill="#5B6B7B" text-anchor="middle">GNOME Shell 45–50  ·  Fedora RPM  ·  no root, no daemon</text>
+  <text x="600" y="585" font-size="17" fill="#5B6B7B" text-anchor="middle">GNOME Shell 45–50  ·  Fedora RPM  ·  no root at runtime, no daemon</text>
 </svg>
