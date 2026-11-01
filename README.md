@@ -12,7 +12,7 @@
 
 <img src="assets/readme/hero-en.svg" width="100%" alt="Brightness, per screen: Lumen's GNOME panel preview with independent controls for a laptop display and an external monitor">
 
-<a href="#install"><img src="assets/readme/btn-zip-en.svg" height="52" alt="Install Lumen"></a>&nbsp;&nbsp;<a href="#install"><img src="assets/readme/btn-rpm-en.svg" height="52" alt="Build a Fedora RPM"></a>&nbsp;&nbsp;<a href="https://github.com/sailxx/lumen/releases/latest"><img src="assets/readme/btn-new-en.svg" height="52" alt="View the latest release"></a>
+<a href="#install"><img src="assets/readme/btn-zip-en.svg" width="190" alt="Install Lumen"></a>&nbsp;&nbsp;<a href="#install"><img src="assets/readme/btn-rpm-en.svg" width="190" alt="Build a Fedora RPM"></a>&nbsp;&nbsp;<a href="https://github.com/sailxx/lumen/releases/latest"><img src="assets/readme/btn-new-en.svg" width="190" alt="View the latest release"></a>
 
 </div>
 
