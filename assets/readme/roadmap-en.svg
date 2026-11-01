@@ -3,7 +3,7 @@
   <rect width="10" height="190" fill="#2E9BFF"/>
   <text x="56" y="60" font-size="16" font-weight="700" letter-spacing="3" fill="#2E9BFF">LUMEN</text>
   <text x="1144" y="60" font-size="16" fill="#8CA2B8" text-anchor="end">☀ every screen, its own slider</text>
-  <text x="54" y="116" font-size="46" font-weight="700" fill="#17222E">Roadmap &amp; known limits</text>
+  <text x="54" y="116" font-size="46" font-weight="700" fill="#17222E">Known limits &amp; troubleshooting</text>
   <line x1="56" y1="138" x2="1144" y2="138" stroke="#E3EBF4" stroke-width="2"/>
-  <text x="56" y="168" font-size="19" fill="#5B6B7B">What is planned, what is missing, and what to do when a monitor will not listen</text>
+  <text x="56" y="168" font-size="19" fill="#5B6B7B">Supported shells, known hardware limits, and practical troubleshooting</text>
 </svg>

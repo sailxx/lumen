@@ -1,9 +1,9 @@
 {
     "uuid": "lumen@vlad",
-    "name": "Lumen — Monitor Brightness",
-    "description": "Яркость каждого монитора — встроенного и внешних (DDC/CI) — из меню на верхней панели GNOME",
+    "name": "Lumen",
+    "description": "Control the brightness of built-in and external displays from the GNOME top panel.",
     "shell-version": ["45", "46", "47", "48", "49", "50"],
     "settings-schema": "org.gnome.shell.extensions.monitor-brightness",
     "url": "https://github.com/sailxx/lumen",
-    "version": 1
+    "version": 2
 }

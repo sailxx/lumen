@@ -1,5 +1,4 @@
-# Проект целиком под Linux (Fedora/GNOME): все текстовые файлы — с LF,
-# чтобы .sh-скрипты не ломались от CRLF при переносе с Windows.
+# Keep text files on LF line endings so shell scripts work when checked out on Windows.
 * text=auto eol=lf
 
 # Бинарное (когда появятся скриншоты)

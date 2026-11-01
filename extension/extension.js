@@ -4,6 +4,7 @@ import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
+import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -13,153 +14,10 @@ import * as Slider from 'resource:///org/gnome/shell/ui/slider.js';
 
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-const VCP_BRIGHTNESS = 10;      // VCP-код яркости в DDC/CI
-const SET_DEBOUNCE_MS = 150;    // пауза после движения слайдера до записи в монитор
+import {detectMonitors, isCancelled, readBrightness, writeBrightness} from './ddcutil.js';
+import {findInternalBacklight, readInternalBrightness, writeInternalBrightness} from './backlight.js';
 
-/* ---------------- вспомогательное ---------------- */
-
-function execAsync(argv, cancellable) {
-    return new Promise((resolve, reject) => {
-        let proc;
-        try {
-            proc = Gio.Subprocess.new(
-                argv,
-                Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE);
-        } catch (err) {
-            reject(err);
-            return;
-        }
-        proc.communicate_utf8_async(null, cancellable, (p, res) => {
-            try {
-                const [, stdout] = p.communicate_utf8_finish(res);
-                resolve(stdout ?? '');
-            } catch (err) {
-                reject(err);
-            }
-        });
-    });
-}
-
-function isCancelled(err) {
-    return err && typeof err.matches === 'function' &&
-        err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED);
-}
-
-function readInt(path) {
-    try {
-        const [ok, bytes] = GLib.file_get_contents(path);
-        if (!ok)
-            return -1;
-        return parseInt(new TextDecoder().decode(bytes).trim(), 10);
-    } catch {
-        return -1;
-    }
-}
-
-/* Разбор «ddcutil detect» (поддерживает и старый, и новый формат вывода) */
-function parseDdcDetect(text) {
-    const monitors = [];
-    let cur = null;
-    let mfg = null;
-    for (const raw of text.split('\n')) {
-        const line = raw.trim();
-        let m;
-        if ((m = line.match(/^Display (\d+)/))) {
-            if (cur)
-                monitors.push(cur);
-            cur = {display: parseInt(m[1], 10), bus: null, connector: null, name: null};
-            mfg = null;
-        } else if (cur) {
-            if ((m = line.match(/^I2C bus:\s+\/dev\/i2c-(\d+)/))) {
-                cur.bus = parseInt(m[1], 10);
-            } else if ((m = line.match(/^DRM connector:\s+card\d+-([A-Za-z0-9-]+)/))) {
-                cur.connector = m[1];
-            } else if ((m = line.match(/^Monitor:\s+(.+)$/))) {
-                cur.name = m[1];
-            } else if ((m = line.match(/^Mfg id:\s+(.+)$/))) {
-                mfg = m[1].trim();
-            } else if ((m = line.match(/^Model:\s+(.+)$/))) {
-                cur.name = `${mfg ?? ''} ${m[1].trim()}`.trim();
-            }
-        }
-    }
-    if (cur)
-        monitors.push(cur);
-
-    for (const mon of monitors) {
-        if (mon.name) {
-            // у ddcutil 2.x строка вида «_DEL DEL DELL U2415 …» — приберём её
-            const words = [...new Set(mon.name.trim().split(/\s+/))];
-            mon.name = words.join(' ');
-            if (mon.name.length > 24)
-                mon.name = `${mon.name.slice(0, 23)}…`;
-        }
-    }
-    return monitors;
-}
-
-/* Разбор «ddcutil getvcp 10»: current value = 50, max value = 100 */
-function parseGetvcp(text) {
-    const m = text.match(/current value\s*=\s*(\d+)\s*,\s*max value\s*=\s*(\d+)/);
-    if (!m)
-        return null;
-    const max = parseInt(m[2], 10);
-    if (max <= 0)
-        return null;
-    return {current: parseInt(m[1], 10), max, frac: parseInt(m[1], 10) / max};
-}
-
-/* Встроенная подсветка ноутбука (поддержка через logind, без root) */
-function findInternalBacklight() {
-    try {
-        const dir = Gio.File.new_for_path('/sys/class/backlight');
-        const children = dir.enumerate_children(
-            'standard::name', Gio.FileQueryInfoFlags.NONE, null);
-        const names = [];
-        let info;
-        while ((info = children.next_file(null)) !== null)
-            names.push(info.get_name());
-        children.close(null);
-        if (names.length === 0)
-            return null;
-
-        const score = n => {
-            if (/^(intel_backlight|amdgpu_bl|nv_backlight|radeon_bl|apple_panel_bl)/.test(n))
-                return 3;
-            if (/^acpi_video/.test(n))
-                return 1;
-            return 2;
-        };
-        names.sort((a, b) => score(b) - score(a));
-
-        const name = names[0];
-        const max = readInt(`/sys/class/backlight/${name}/max_brightness`);
-        if (max <= 0)
-            return null;
-        return {name, max};
-    } catch {
-        return null;
-    }
-}
-
-function setLogindBrightness(backlightName, value) {
-    Gio.DBus.system.call(
-        'org.freedesktop.login1',
-        '/org/freedesktop/login1/session/auto',
-        'org.freedesktop.login1.Session',
-        'SetBrightness',
-        new GLib.Variant('(ssu)', ['backlight', backlightName, value]),
-        null, Gio.DBusCallFlags.NONE, -1, null,
-        (conn, res) => {
-            try {
-                conn.call_finish(res);
-            } catch (err) {
-                console.error(`monitor-brightness: ${err.message}`);
-            }
-        });
-}
-
-/* ---------------- строка меню: имя + слайдер + % ---------------- */
+const SET_DEBOUNCE_MS = 150;
 
 const BrightnessRow = GObject.registerClass({
     Signals: {'changed': {param_types: [GObject.TYPE_DOUBLE]}},
@@ -167,20 +25,23 @@ const BrightnessRow = GObject.registerClass({
     _init(desc) {
         super._init({activate: false});
 
-        this.desc = desc;          // {id, label, kind: 'internal'|'ddc', bus, display}
+        this.desc = desc;
         this.stepPercent = 5;
         this.dragging = false;
+        this.pendingWrite = false;
         this._updating = false;
 
-        const name = new St.Label({
+        this._nameLabel = new St.Label({
             text: desc.label,
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.CENTER,
         });
-        name.add_style_class_name('mb-name');
-        this.add_child(name);
+        this._nameLabel.add_style_class_name('lumen-name');
+        this._nameLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        this._nameLabel.tooltip_text = desc.label;
+        this.add_child(this._nameLabel);
 
-        this._slider = new Slider.Slider(0.5);
+        this._slider = new Slider.Slider(0);
         this._slider.x_expand = true;
         this._slider.y_align = Clutter.ActorAlign.CENTER;
         this._slider.connect('drag-begin', () => (this.dragging = true));
@@ -188,56 +49,78 @@ const BrightnessRow = GObject.registerClass({
         this._slider.connect('notify::value', () => {
             if (this._updating)
                 return;
-            this._valueLabel.text = `${Math.round(this._slider.value * 100)}`;
+
+            this._valueLabel.text = `${Math.round(this._slider.value * 100)}%`;
+            this._valueLabel.tooltip_text = null;
+            this._valueLabel.remove_style_class_name('lumen-error');
+            this.pendingWrite = true;
             this.emit('changed', this._slider.value);
         });
         this.add_child(this._slider);
 
         this._valueLabel = new St.Label({
-            text: '…',
+            text: '—',
             x_align: Clutter.ActorAlign.END,
             y_align: Clutter.ActorAlign.CENTER,
         });
-        this._valueLabel.add_style_class_name('mb-value');
+        this._valueLabel.add_style_class_name('lumen-value');
         this.add_child(this._valueLabel);
 
+        this.sensitive = false;
         this.connect('scroll-event', (actor, event) => {
-            const dir = event.get_scroll_direction();
-            if (dir === Clutter.ScrollDirection.UP)
+            const direction = event.get_scroll_direction();
+            if (!this.sensitive)
+                return Clutter.EVENT_PROPAGATE;
+            if (direction === Clutter.ScrollDirection.UP)
                 this._nudge(this.stepPercent);
-            else if (dir === Clutter.ScrollDirection.DOWN)
+            else if (direction === Clutter.ScrollDirection.DOWN)
                 this._nudge(-this.stepPercent);
-            return Clutter.EVENT_PROPAGATE;
+            else
+                return Clutter.EVENT_PROPAGATE;
+            return Clutter.EVENT_STOP;
         });
     }
 
     _nudge(percent) {
-        const v = this._slider.value + percent / 100;
-        this._slider.value = Math.min(1, Math.max(0, v));
+        const next = this._slider.value + percent / 100;
+        this._slider.value = Math.max(0, Math.min(1, next));
     }
 
-    setOnline(frac) {
+    setOnline(fraction) {
         this._updating = true;
-        this._slider.value = frac;
+        this._slider.value = Math.max(0, Math.min(1, fraction));
         this._updating = false;
-        this._valueLabel.text = `${Math.round(frac * 100)}`;
+        this.pendingWrite = false;
+        this.sensitive = true;
+        this._valueLabel.text = `${Math.round(this._slider.value * 100)}%`;
+        this._valueLabel.tooltip_text = null;
+        this._valueLabel.remove_style_class_name('lumen-error');
     }
 
-    setUnavailable() {
+    setUnavailable(message = null) {
+        this.pendingWrite = false;
         this.sensitive = false;
         this._valueLabel.text = '—';
+        this._valueLabel.tooltip_text = message;
+        this._valueLabel.remove_style_class_name('lumen-error');
+    }
+
+    setWriteError(message) {
+        this.pendingWrite = false;
+        this.sensitive = true;
+        this._valueLabel.text = '!';
+        this._valueLabel.tooltip_text = message;
+        this._valueLabel.add_style_class_name('lumen-error');
     }
 
     get value() {
         return this._slider.value;
     }
 
-    set value(v) {
-        this._slider.value = Math.min(1, Math.max(0, v));
+    set value(value) {
+        this._slider.value = Math.max(0, Math.min(1, value));
     }
 });
-
-/* ---------------- индикатор на панели ---------------- */
 
 const MonitorBrightnessIndicator = GObject.registerClass(
 class MonitorBrightnessIndicator extends PanelMenu.Button {
@@ -247,11 +130,18 @@ class MonitorBrightnessIndicator extends PanelMenu.Button {
         this._extension = extension;
         this._settings = extension.getSettings();
         this._cancellable = new Gio.Cancellable();
+        this._scanCancellable = null;
+        this._refreshCancellable = null;
         this._rows = [];
         this._timeouts = new Map();
+        this._writeQueues = new Map();
+        this._writeGenerations = new Map();
         this._internal = null;
         this._lastRow = null;
         this._placeholder = null;
+        this._scanGeneration = 0;
+        this._refreshGeneration = 0;
+        this._isShutdown = false;
 
         this.add_child(new St.Icon({
             icon_name: 'display-brightness-symbolic',
@@ -263,178 +153,233 @@ class MonitorBrightnessIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(this._section);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        const rescanItem = new PopupMenu.PopupMenuItem('Обновить мониторы');
+        const rescanItem = new PopupMenu.PopupMenuItem('Refresh displays');
         rescanItem.connect('activate', () => this.rebuild());
         this.menu.addMenuItem(rescanItem);
 
-        const prefsItem = new PopupMenu.PopupMenuItem('Настройки');
-        prefsItem.connect('activate', () => this._extension.openPrefs());
-        this.menu.addMenuItem(prefsItem);
+        const preferencesItem = new PopupMenu.PopupMenuItem('Preferences');
+        preferencesItem.connect('activate', () => this._extension.openPreferences());
+        this.menu.addMenuItem(preferencesItem);
 
         this._openId = this.menu.connect('open-state-changed', (menu, open) => {
             if (open)
                 this.refreshValues();
         });
         this._scrollId = this.connect('scroll-event', (actor, event) => {
-            this._onPanelScroll(event);
-            return Clutter.EVENT_PROPAGATE;
+            return this._onPanelScroll(event);
         });
         this._internalId = this._settings.connect('changed::show-internal',
             () => this.rebuild());
         this._stepId = this._settings.connect('changed::scroll-step', () => {
             const step = this._settings.get_int('scroll-step');
-            this._rows.forEach(r => (r.stepPercent = step));
+            this._rows.forEach(row => (row.stepPercent = step));
         });
 
         this.rebuild();
     }
 
     rebuild() {
+        if (this._isShutdown)
+            return;
+
+        this._scanGeneration++;
+        const scanGeneration = this._scanGeneration;
+        this._scanCancellable?.cancel();
+        this._scanCancellable = new Gio.Cancellable();
+        this._refreshCancellable?.cancel();
+        this._refreshCancellable = null;
+        this._refreshGeneration++;
         this._clearRows();
 
-        this._placeholder = new PopupMenu.PopupMenuItem('Определение мониторов…');
+        this._placeholder = new PopupMenu.PopupMenuItem('Scanning for displays…');
         this._placeholder.sensitive = false;
         this._section.addMenuItem(this._placeholder);
 
-        const cancellable = this._cancellable;
-        execAsync(['ddcutil', 'detect'], cancellable).then(text => {
-            if (cancellable.is_cancelled())
+        detectMonitors(this._scanCancellable).then(monitors => {
+            if (!this._isCurrentScan(scanGeneration))
                 return;
             this._dropPlaceholder();
 
             const showInternal = this._settings.get_boolean('show-internal');
-
-            // встроенный экран — через подсветку sysfs + logind
             this._internal = showInternal ? findInternalBacklight() : null;
-            if (this._internal)
-                this._addRow({id: 'internal', label: 'Встроенный экран', kind: 'internal'});
+            if (this._internal) {
+                this._addRow({
+                    id: 'internal',
+                    label: 'Built-in display',
+                    kind: 'internal',
+                    device: this._internal,
+                });
+            }
 
-            // внешние мониторы — через DDC/CI
-            const monitors = parseDdcDetect(text);
-            for (const mon of monitors) {
-                // встроенную панель ddcutil тоже видит как eDP — не дублируем
-                if (showInternal && this._internal &&
-                    mon.connector && /^(eDP|LVDS)/.test(mon.connector))
+            for (const monitor of monitors) {
+                const isBuiltInConnector = monitor.connector &&
+                    /^(eDP|LVDS)/i.test(monitor.connector);
+                if (isBuiltInConnector && (!showInternal || this._internal))
                     continue;
 
-                const label = mon.connector && mon.name
-                    ? `${mon.connector} · ${mon.name}`
-                    : (mon.name ?? `Монитор ${mon.display}`);
+                const label = monitor.connector && monitor.name
+                    ? `${monitor.connector} · ${monitor.name}`
+                    : monitor.connector ?? monitor.name ?? `Display ${monitor.display}`;
                 this._addRow({
-                    id: `ddc-${mon.display}`,
+                    id: `ddc-${monitor.display}`,
                     label,
                     kind: 'ddc',
-                    bus: mon.bus,
-                    display: mon.display,
+                    bus: monitor.bus,
+                    display: monitor.display,
                 });
             }
 
             if (this._rows.length === 0) {
-                const empty = new PopupMenu.PopupMenuItem('Мониторы DDC/CI не найдены');
-                empty.sensitive = false;
-                this._section.addMenuItem(empty);
+                this._showMessage('No controllable displays found. Check DDC/CI and scan again.');
+                return;
             }
 
             this.refreshValues();
-        }).catch(err => {
-            if (isCancelled(err))
+        }).catch(error => {
+            if (isCancelled(error) || !this._isCurrentScan(scanGeneration))
                 return;
+
             this._dropPlaceholder();
-            const item = new PopupMenu.PopupMenuItem(
-                'Не удалось обратиться к ddcutil — попробуй «Обновить мониторы»');
-            item.sensitive = false;
-            this._section.addMenuItem(item);
-            console.error(`monitor-brightness: ${err.message}`);
+            this._showMessage('Could not scan displays. Check that ddcutil is installed and try again.');
+            console.error(`Lumen: display scan failed: ${error.message}`);
         });
     }
 
-    _addRow(desc) {
-        const row = new BrightnessRow(desc);
+    _addRow(description) {
+        const row = new BrightnessRow(description);
         row.stepPercent = this._settings.get_int('scroll-step');
-        row.connect('changed', (r, frac) => this._onRowChanged(r, frac));
+        row.connect('changed', (changedRow, fraction) => this._onRowChanged(changedRow, fraction));
         this._section.addMenuItem(row);
         this._rows.push(row);
         return row;
     }
 
-    _onRowChanged(row, frac) {
+    _showMessage(message) {
+        const item = new PopupMenu.PopupMenuItem(message);
+        item.sensitive = false;
+        this._section.addMenuItem(item);
+    }
+
+    _onRowChanged(row, fraction) {
         this._lastRow = row;
+        this._refreshGeneration++;
+        this._refreshCancellable?.cancel();
 
-        if (row.desc.kind === 'internal') {
-            const bl = this._internal;
-            if (bl)
-                setLogindBrightness(bl.name, Math.round(frac * bl.max));
+        const id = row.desc.id;
+        const generation = (this._writeGenerations.get(id) ?? 0) + 1;
+        this._writeGenerations.set(id, generation);
+
+        const existingTimeout = this._timeouts.get(id);
+        if (existingTimeout !== undefined)
+            GLib.source_remove(existingTimeout);
+
+        const timeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, SET_DEBOUNCE_MS, () => {
+            this._timeouts.delete(id);
+            this._queueWrite(row, fraction, generation);
+            return GLib.SOURCE_REMOVE;
+        });
+        this._timeouts.set(id, timeout);
+    }
+
+    _queueWrite(row, fraction, generation) {
+        const id = row.desc.id;
+        const previousWrite = this._writeQueues.get(id) ?? Promise.resolve();
+        const write = previousWrite.catch(() => {}).then(() => {
+            if (this._cancellable.is_cancelled())
+                throw new Error('Lumen is shutting down');
+
+            if (row.desc.kind === 'internal')
+                return writeInternalBrightness(row.desc.device, fraction, this._cancellable);
+
+            return writeBrightness(row.desc, Math.round(fraction * 100), this._cancellable);
+        });
+        this._writeQueues.set(id, write);
+
+        write.then(() => {
+            if (this._isCurrentRow(row) && this._writeGenerations.get(id) === generation)
+                row.setOnline(fraction);
+        }).catch(error => {
+            if (isCancelled(error) || !this._isCurrentRow(row) ||
+                this._writeGenerations.get(id) !== generation)
+                return;
+
+            row.setWriteError(error.message);
+            console.error(`Lumen: brightness update failed: ${error.message}`);
+        }).finally(() => {
+            if (this._writeQueues.get(id) === write)
+                this._writeQueues.delete(id);
+        });
+    }
+
+    async refreshValues() {
+        if (this._isShutdown || this._rows.length === 0)
             return;
-        }
 
-        const pct = Math.min(100, Math.max(0, Math.round(frac * 100)));
-        this._scheduleSet(row, pct);
-    }
+        this._refreshCancellable?.cancel();
+        const cancellable = new Gio.Cancellable();
+        this._refreshCancellable = cancellable;
+        const refreshGeneration = ++this._refreshGeneration;
+        const scanGeneration = this._scanGeneration;
 
-    _scheduleSet(row, pct) {
-        const {bus, display} = row.desc;
-        if (this._timeouts.has(row.desc.id))
-            GLib.source_remove(this._timeouts.get(row.desc.id));
-
-        this._timeouts.set(row.desc.id, GLib.timeout_add(
-            GLib.PRIORITY_DEFAULT, SET_DEBOUNCE_MS, () => {
-                this._timeouts.delete(row.desc.id);
-                const argv = bus !== null
-                    ? ['ddcutil', 'setvcp', String(VCP_BRIGHTNESS), String(pct),
-                        '--bus', String(bus)]
-                    : ['ddcutil', 'setvcp', String(VCP_BRIGHTNESS), String(pct),
-                        '--display', String(display)];
-                execAsync(argv, this._cancellable).catch(err => {
-                    if (!isCancelled(err))
-                        console.error(`monitor-brightness: ${err.message}`);
-                });
-                return GLib.SOURCE_REMOVE;
-            }));
-    }
-
-    refreshValues() {
-        for (const row of this._rows) {
-            if (row.dragging)
+        for (const row of [...this._rows]) {
+            if (!this._isCurrentRow(row, scanGeneration, refreshGeneration))
+                return;
+            if (row.dragging || row.pendingWrite)
                 continue;
 
             if (row.desc.kind === 'internal') {
-                const bl = this._internal;
-                if (!bl)
-                    continue;
-                const v = readInt(`/sys/class/backlight/${bl.name}/brightness`);
-                if (v >= 0)
-                    row.setOnline(v / bl.max);
+                const fraction = readInternalBrightness(row.desc.device);
+                if (fraction === null)
+                    row.setUnavailable('The built-in display brightness could not be read.');
+                else
+                    row.setOnline(fraction);
                 continue;
             }
 
-            const {bus, display} = row.desc;
-            const argv = bus !== null
-                ? ['ddcutil', 'getvcp', String(VCP_BRIGHTNESS), '--bus', String(bus)]
-                : ['ddcutil', 'getvcp', String(VCP_BRIGHTNESS), '--display', String(display)];
-            execAsync(argv, this._cancellable).then(text => {
-                if (this._cancellable.is_cancelled() || row.dragging)
+            try {
+                const value = await readBrightness(row.desc, cancellable);
+                if (!this._isCurrentRow(row, scanGeneration, refreshGeneration))
                     return;
-                const parsed = parseGetvcp(text);
-                if (parsed)
-                    row.setOnline(parsed.frac);
-                else
-                    row.setUnavailable();
-            }).catch(err => {
-                if (!isCancelled(err))
-                    console.debug(`monitor-brightness: getvcp: ${err.message}`);
-            });
+                if (!row.dragging && !row.pendingWrite)
+                    row.setOnline(value.frac);
+            } catch (error) {
+                if (isCancelled(error))
+                    return;
+                if (this._isCurrentRow(row, scanGeneration, refreshGeneration)) {
+                    row.setUnavailable(error.message);
+                    console.debug(`Lumen: brightness read failed: ${error.message}`);
+                }
+            }
         }
     }
 
+    _isCurrentScan(scanGeneration) {
+        return !this._isShutdown && scanGeneration === this._scanGeneration;
+    }
+
+    _isCurrentRow(row, scanGeneration = this._scanGeneration,
+        refreshGeneration = this._refreshGeneration) {
+        return this._isCurrentScan(scanGeneration) &&
+            refreshGeneration === this._refreshGeneration && this._rows.includes(row);
+    }
+
     _onPanelScroll(event) {
-        const row = this._lastRow ?? this._rows[0];
+        const direction = event.get_scroll_direction();
+        if (direction !== Clutter.ScrollDirection.UP &&
+            direction !== Clutter.ScrollDirection.DOWN)
+            return Clutter.EVENT_PROPAGATE;
+
+        const row = this._lastRow?.sensitive
+            ? this._lastRow
+            : this._rows.find(candidate => candidate.sensitive);
         if (!row)
-            return;
-        const dir = event.get_scroll_direction();
-        if (dir === Clutter.ScrollDirection.UP)
-            row.value += row.stepPercent / 100;
-        else if (dir === Clutter.ScrollDirection.DOWN)
-            row.value -= row.stepPercent / 100;
+            return Clutter.EVENT_PROPAGATE;
+
+        const delta = direction === Clutter.ScrollDirection.UP
+            ? row.stepPercent
+            : -row.stepPercent;
+        row.value += delta / 100;
+        return Clutter.EVENT_STOP;
     }
 
     _dropPlaceholder() {
@@ -445,16 +390,25 @@ class MonitorBrightnessIndicator extends PanelMenu.Button {
     }
 
     _clearRows() {
-        for (const id of this._timeouts.keys())
-            GLib.source_remove(this._timeouts.get(id));
+        for (const timeout of this._timeouts.values())
+            GLib.source_remove(timeout);
         this._timeouts.clear();
         this._section.removeAll();
         this._dropPlaceholder();
         this._rows = [];
         this._lastRow = null;
+        this._internal = null;
     }
 
     shutdown() {
+        if (this._isShutdown)
+            return;
+
+        this._isShutdown = true;
+        this._scanGeneration++;
+        this._refreshGeneration++;
+        this._scanCancellable?.cancel();
+        this._refreshCancellable?.cancel();
         this._cancellable.cancel();
         this._clearRows();
         this._settings.disconnect(this._internalId);
@@ -464,8 +418,6 @@ class MonitorBrightnessIndicator extends PanelMenu.Button {
     }
 });
 
-/* ---------------- точка входа расширения ---------------- */
-
 export default class MonitorBrightnessExtension extends Extension {
     enable() {
         this._indicator = new MonitorBrightnessIndicator(this);
@@ -473,10 +425,11 @@ export default class MonitorBrightnessExtension extends Extension {
     }
 
     disable() {
-        if (this._indicator) {
-            this._indicator.shutdown();
-            this._indicator.destroy();
-            this._indicator = null;
-        }
+        if (!this._indicator)
+            return;
+
+        this._indicator.shutdown();
+        this._indicator.destroy();
+        this._indicator = null;
     }
 }
