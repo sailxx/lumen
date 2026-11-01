@@ -7,3 +7,6 @@ rpm/rpmbuild/
 
 # Compiled GSettings schemas
 extension/schemas/gschemas.compiled
+
+# README artwork builder dependencies
+node_modules/
