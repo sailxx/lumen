@@ -21,7 +21,7 @@ jobs:
 
       - name: Check shell syntax
         run: |
-          for script in setup-monitor-brightness.sh extension/install.sh extension/package.sh rpm/build-rpm.sh; do
+          for script in setup-monitor-brightness.sh extension/install.sh extension/package.sh rpm/build-rpm.sh deb/build-deb.sh macos/build-app.sh macos/install.sh; do
             bash -n "$script"
           done
 
@@ -87,3 +87,23 @@ jobs:
               assert extension_root + name in files, f"RPM is missing {name}"
           assert "/usr/share/glib-2.0/schemas/org.gnome.shell.extensions.monitor-brightness.gschema.xml" in files
           PY
+
+  macos-build:
+    runs-on: macos-15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Build native menu bar app
+        run: swift build --package-path macos -c release
+
+  deb-package-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Build Debian package
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev
+          ./deb/build-deb.sh "$RUNNER_TEMP/lumen.deb"
+          dpkg-deb --info "$RUNNER_TEMP/lumen.deb"

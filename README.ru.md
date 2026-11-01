@@ -54,6 +54,12 @@ gnome-extensions enable lumen@vlad
 
 RPM устанавливает расширение и схему настроек в систему, добавляет правило udev и включает загрузку `i2c-dev` при запуске. После установки перезапустите GNOME Shell.
 
+### Дополнительные пакеты и macOS
+
+Для Debian/Ubuntu соберите пакет командой `./deb/build-deb.sh`, затем установите файл `.deb`. Для Arch используйте `makepkg -si` в каталоге `arch`. Скрипт зависимостей поддерживает Fedora, Debian/Ubuntu, Arch, openSUSE, Alpine и Gentoo. На Alpine без `udevadm` настройте права на I²C средствами системы.
+
+Приложение Lumen для macOS — отдельное приложение в строке меню для внешних мониторов DDC/CI на Apple Silicon и macOS 13+. Оно использует `m1ddc` и не управляет встроенным экраном. Установите Xcode Command Line Tools и Homebrew, затем выполните `brew install m1ddc` и `./macos/install.sh` из клона репозитория. Intel Mac не поддерживается.
+
 ## Требования и известные ограничения
 
 - Linux с GNOME Shell 45–50.
