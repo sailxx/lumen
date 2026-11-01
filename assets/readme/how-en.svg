@@ -1,9 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="190" viewBox="0 0 1200 190" font-family="Segoe UI, Arial, Helvetica, sans-serif">
-  <rect width="1200" height="190" fill="#FFFFFF"/>
-  <rect width="10" height="190" fill="#2E9BFF"/>
-  <text x="56" y="60" font-size="16" font-weight="700" letter-spacing="3" fill="#2E9BFF">LUMEN</text>
-  <text x="1144" y="60" font-size="16" fill="#8CA2B8" text-anchor="end">☀ every screen, its own slider</text>
-  <text x="54" y="116" font-size="46" font-weight="700" fill="#17222E">How it works</text>
-  <line x1="56" y1="138" x2="1144" y2="138" stroke="#E3EBF4" stroke-width="2"/>
-  <text x="56" y="168" font-size="19" fill="#5B6B7B">The laptop panel through logind, externals over DDC/CI with ddcutil — no root, no daemon</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="320" viewBox="0 0 880 320" role="img" aria-label="Lumen uses logind for a built-in display and DDC/CI through ddcutil for external monitors">
+  <defs>
+    <style>
+      .sans { font-family: 'Segoe UI', Inter, Arial, sans-serif; }
+      .mono { font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace; }
+    </style>
+  </defs>
+  <rect width="880" height="320" rx="24" fill="#F3F6FA"/>
+  <text class="sans" x="36" y="43" font-size="12" font-weight="700" letter-spacing="2.2" fill="#328FE3">UNDER THE HOOD</text>
+  <text class="sans" x="36" y="73" font-size="24" font-weight="650" fill="#182432">Two paths. One control.</text>
+
+  <rect x="32" y="96" width="352" height="168" rx="20" fill="#FFFFFF" stroke="#DEE6EF" stroke-width="1.5"/>
+  <rect x="54" y="116" width="56" height="48" rx="12" fill="#EAF4FF"/>
+  <rect x="65" y="124" width="34" height="24" rx="3" fill="none" stroke="#328FE3" stroke-width="2"/>
+  <path d="M60 153h44l-5 5H65z" fill="#328FE3"/>
+  <text class="sans" x="54" y="195" font-size="16" font-weight="650" fill="#182432">Built-in display</text>
+  <text class="sans" x="54" y="217" font-size="12.5" fill="#69798B">Uses the system backlight interface</text>
+  <rect x="54" y="231" width="68" height="20" rx="10" fill="#EAF4FF"/>
+  <text class="mono" x="88" y="245" font-size="10" fill="#2578C1" text-anchor="middle">logind</text>
+
+  <path d="M392 180h40m-9-8 9 8-9 8" fill="none" stroke="#9CB0C5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="440" y="96" width="408" height="168" rx="20" fill="#FFFFFF" stroke="#DEE6EF" stroke-width="1.5"/>
+  <rect x="462" y="116" width="56" height="48" rx="12" fill="#EAF4FF"/>
+  <rect x="471" y="123" width="38" height="26" rx="3" fill="none" stroke="#328FE3" stroke-width="2"/>
+  <path d="M488 149v6m-12 3h25" stroke="#328FE3" stroke-width="2" stroke-linecap="round"/>
+  <text class="sans" x="462" y="195" font-size="16" font-weight="650" fill="#182432">External monitors</text>
+  <text class="sans" x="462" y="217" font-size="12.5" fill="#69798B">Monitor brightness over DDC/CI</text>
+  <rect x="462" y="231" width="164" height="20" rx="10" fill="#EAF4FF"/>
+  <text class="mono" x="544" y="245" font-size="10" fill="#2578C1" text-anchor="middle">DDC/CI  →  ddcutil</text>
+
+  <rect x="32" y="278" width="816" height="26" rx="13" fill="#E6EDF5"/>
+  <circle cx="50" cy="291" r="4" fill="#328FE3"/>
+  <text class="sans" x="64" y="295" font-size="11.5" fill="#526477">No resident daemon</text>
+  <circle cx="212" cy="291" r="4" fill="#328FE3"/>
+  <text class="sans" x="226" y="295" font-size="11.5" fill="#526477">No root access while adjusting brightness</text>
 </svg>

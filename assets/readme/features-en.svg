@@ -1,9 +1,67 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="190" viewBox="0 0 1200 190" font-family="Segoe UI, Arial, Helvetica, sans-serif">
-  <rect width="1200" height="190" fill="#FFFFFF"/>
-  <rect width="10" height="190" fill="#2E9BFF"/>
-  <text x="56" y="60" font-size="16" font-weight="700" letter-spacing="3" fill="#2E9BFF">LUMEN</text>
-  <text x="1144" y="60" font-size="16" fill="#8CA2B8" text-anchor="end">☀ every screen, its own slider</text>
-  <text x="54" y="116" font-size="46" font-weight="700" fill="#17222E">Features</text>
-  <line x1="56" y1="138" x2="1144" y2="138" stroke="#E3EBF4" stroke-width="2"/>
-  <text x="56" y="168" font-size="19" fill="#5B6B7B">Every screen in one menu — drag to change, scroll to nudge, rescan when you plug in</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="492" viewBox="0 0 880 492" role="img" aria-label="Lumen's display menu with separate brightness sliders, direct scrolling, and local control">
+  <defs>
+    <style>
+      .sans { font-family: 'Segoe UI', Inter, Arial, sans-serif; }
+      .mono { font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace; }
+    </style>
+  </defs>
+  <rect width="880" height="492" rx="24" fill="#F3F6FA"/>
+  <circle cx="824" cy="46" r="72" fill="#E8F2FD"/>
+  <text class="sans" x="36" y="43" font-size="12" font-weight="700" letter-spacing="2.2" fill="#328FE3">THE CONTROLS</text>
+  <text class="sans" x="36" y="73" font-size="24" font-weight="650" fill="#182432">Every display, in one menu</text>
+
+  <rect x="32" y="94" width="452" height="364" rx="20" fill="#FFFFFF" stroke="#DEE6EF" stroke-width="1.5"/>
+  <text class="sans" x="56" y="126" font-size="12" font-weight="700" letter-spacing="1.1" fill="#8392A4">GNOME PANEL MENU</text>
+  <rect x="50" y="144" width="416" height="294" rx="16" fill="#222833"/>
+  <g transform="translate(72 163)">
+    <circle cx="9" cy="9" r="8" fill="#2E9BFF"/>
+    <circle cx="9" cy="9" r="3" fill="#FFFFFF"/>
+    <path d="M9 0v3M9 15v3M0 9h3m12 0h3" stroke="#FFFFFF" stroke-width="1.4" stroke-linecap="round"/>
+  </g>
+  <text class="sans" x="102" y="177" font-size="15" font-weight="650" fill="#F4F7FB">Displays</text>
+  <text class="sans" x="442" y="177" font-size="11" fill="#94A1B2" text-anchor="end">2 connected</text>
+  <line x1="68" y1="192" x2="448" y2="192" stroke="#3A4350"/>
+
+  <text class="sans" x="72" y="222" font-size="13" font-weight="550" fill="#E8EDF3">Built-in display</text>
+  <text class="mono" x="442" y="222" font-size="12" fill="#BCC7D4" text-anchor="end">72%</text>
+  <rect x="72" y="237" width="370" height="7" rx="3.5" fill="#3B4553"/>
+  <rect x="72" y="237" width="266" height="7" rx="3.5" fill="#2E9BFF"/>
+  <circle cx="338" cy="240.5" r="8" fill="#FFFFFF" stroke="#2E9BFF" stroke-width="2.5"/>
+  <rect x="72" y="258" width="72" height="20" rx="10" fill="#313A47"/>
+  <text class="sans" x="108" y="272" font-size="10" fill="#AAB6C5" text-anchor="middle">logind</text>
+
+  <text class="sans" x="72" y="314" font-size="13" font-weight="550" fill="#E8EDF3">DP-1 · DELL U2415</text>
+  <text class="mono" x="442" y="314" font-size="12" fill="#BCC7D4" text-anchor="end">43%</text>
+  <rect x="72" y="329" width="370" height="7" rx="3.5" fill="#3B4553"/>
+  <rect x="72" y="329" width="159" height="7" rx="3.5" fill="#2E9BFF"/>
+  <circle cx="231" cy="332.5" r="8" fill="#FFFFFF" stroke="#2E9BFF" stroke-width="2.5"/>
+  <rect x="72" y="350" width="82" height="20" rx="10" fill="#313A47"/>
+  <text class="sans" x="113" y="364" font-size="10" fill="#AAB6C5" text-anchor="middle">DDC / CI</text>
+
+  <line x1="68" y1="384" x2="448" y2="384" stroke="#3A4350"/>
+  <g transform="translate(72 400)" fill="none" stroke="#AEB9C7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 8a6 6 0 1 0 1.5-4M3 2v4h4"/>
+  </g>
+  <text class="sans" x="96" y="416" font-size="12" fill="#CFD7E1">Refresh displays</text>
+  <text class="sans" x="442" y="416" font-size="16" fill="#8391A2" text-anchor="end">›</text>
+
+  <rect x="502" y="94" width="346" height="172" rx="20" fill="#FFFFFF" stroke="#DEE6EF" stroke-width="1.5"/>
+  <rect x="524" y="116" width="44" height="36" rx="8" fill="#EAF4FF"/>
+  <rect x="531" y="123" width="17" height="12" rx="2" fill="none" stroke="#328FE3" stroke-width="1.8"/>
+  <path d="M529 139h21" stroke="#328FE3" stroke-width="1.8" stroke-linecap="round"/>
+  <rect x="551" y="128" width="12" height="10" rx="2" fill="#FFFFFF" stroke="#328FE3" stroke-width="1.5"/>
+  <text class="sans" x="524" y="184" font-size="16" font-weight="650" fill="#182432">Independent sliders</text>
+  <text class="sans" x="524" y="208" font-size="12.5" fill="#69798B">Change one screen without moving</text>
+  <text class="sans" x="524" y="226" font-size="12.5" fill="#69798B">the brightness of another.</text>
+  <text class="mono" x="524" y="249" font-size="10" letter-spacing=".4" fill="#328FE3">BUILT-IN  +  EXTERNAL</text>
+
+  <rect x="502" y="282" width="346" height="176" rx="20" fill="#EAF4FF" stroke="#D3E7FB" stroke-width="1.5"/>
+  <circle cx="546" cy="327" r="22" fill="#FFFFFF"/>
+  <path d="M546 313v10m0 8v10m-14-14h10m8 0h10" stroke="#328FE3" stroke-width="2" stroke-linecap="round"/>
+  <path d="M546 319a8 8 0 0 1 8 8" fill="none" stroke="#328FE3" stroke-width="2" stroke-linecap="round"/>
+  <text class="sans" x="524" y="376" font-size="16" font-weight="650" fill="#182432">Scroll to adjust</text>
+  <text class="sans" x="524" y="400" font-size="12.5" fill="#53677D">A row changes its display. The panel</text>
+  <text class="sans" x="524" y="418" font-size="12.5" fill="#53677D">icon nudges the last-used display.</text>
+  <rect x="524" y="432" width="82" height="18" rx="9" fill="#D3E9FC"/>
+  <text class="mono" x="565" y="445" font-size="10" fill="#2578C1" text-anchor="middle">1–25% STEP</text>
 </svg>

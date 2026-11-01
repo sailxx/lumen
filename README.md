@@ -22,7 +22,7 @@
 
 <br>
 
-<img src="assets/readme/features-en.svg" width="100%" alt="Features: independent display sliders, scrolling, and display rescanning">
+<img src="assets/readme/features-en.svg" width="100%" alt="A Lumen panel menu with separate built-in and external display sliders, plus cards for independent controls and scrolling">
 
 <details>
 <summary><b>More about the features</b></summary>
@@ -47,15 +47,15 @@ Lumen runs as a GNOME Shell extension. It has no background daemon and makes no 
 
 <br>
 
-<img src="assets/readme/how-en.svg" width="100%" alt="The built-in display uses logind; external displays use DDC/CI through ddcutil">
+<img src="assets/readme/how-en.svg" width="100%" alt="Two control paths: logind for the built-in display and DDC/CI through ddcutil for external monitors">
 
 <br>
 
-<img src="assets/readme/numbers-en.svg" width="100%" alt="One panel icon, debounced brightness writes, GNOME Shell 45 through 50, and no root access at runtime">
+<img src="assets/readme/numbers-en.svg" width="100%" alt="Lumen's compact stats cards: 150 millisecond debounce, no root access while adjusting, scroll steps from 1 to 25 percent, and GNOME Shell 45 through 50">
 
 <br>
 
-<img src="assets/readme/roadmap-en.svg" width="100%" alt="Supported shells, known hardware limits, and practical troubleshooting">
+<img src="assets/readme/roadmap-en.svg" width="100%" alt="Two setup cards: enable DDC/CI in the monitor menu and check that a dock passes it through">
 
 <details>
 <a id="install"></a>

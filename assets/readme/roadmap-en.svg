@@ -1,9 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="190" viewBox="0 0 1200 190" font-family="Segoe UI, Arial, Helvetica, sans-serif">
-  <rect width="1200" height="190" fill="#FFFFFF"/>
-  <rect width="10" height="190" fill="#2E9BFF"/>
-  <text x="56" y="60" font-size="16" font-weight="700" letter-spacing="3" fill="#2E9BFF">LUMEN</text>
-  <text x="1144" y="60" font-size="16" fill="#8CA2B8" text-anchor="end">☀ every screen, its own slider</text>
-  <text x="54" y="116" font-size="46" font-weight="700" fill="#17222E">Known limits &amp; troubleshooting</text>
-  <line x1="56" y1="138" x2="1144" y2="138" stroke="#E3EBF4" stroke-width="2"/>
-  <text x="56" y="168" font-size="19" fill="#5B6B7B">Supported shells, known hardware limits, and practical troubleshooting</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="242" viewBox="0 0 880 242" role="img" aria-label="Before connecting an external display, enable DDC/CI and check that your dock passes the signal through">
+  <defs>
+    <style>
+      .sans { font-family: 'Segoe UI', Inter, Arial, sans-serif; }
+      .mono { font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace; }
+    </style>
+  </defs>
+  <rect width="880" height="242" rx="24" fill="#F3F6FA"/>
+  <text class="sans" x="36" y="43" font-size="12" font-weight="700" letter-spacing="2.2" fill="#328FE3">BEFORE YOU START</text>
+  <text class="sans" x="36" y="73" font-size="24" font-weight="650" fill="#182432">Two quick checks for external screens</text>
+
+  <rect x="32" y="94" width="396" height="116" rx="20" fill="#FFFFFF" stroke="#DEE6EF" stroke-width="1.5"/>
+  <rect x="52" y="116" width="48" height="48" rx="14" fill="#EAF4FF"/>
+  <rect x="63" y="126" width="26" height="18" rx="3" fill="none" stroke="#328FE3" stroke-width="1.8"/>
+  <path d="M58 149h36m-18-5v5" stroke="#328FE3" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="83" cy="132" r="2" fill="#328FE3"/>
+  <text class="sans" x="118" y="132" font-size="15" font-weight="650" fill="#182432">Enable DDC/CI</text>
+  <text class="sans" x="118" y="154" font-size="12" fill="#69798B">Turn it on in the monitor's on-screen</text>
+  <text class="sans" x="118" y="172" font-size="12" fill="#69798B">menu before scanning.</text>
+
+  <rect x="448" y="94" width="400" height="116" rx="20" fill="#EAF4FF" stroke="#D3E7FB" stroke-width="1.5"/>
+  <rect x="468" y="116" width="48" height="48" rx="14" fill="#FFFFFF"/>
+  <rect x="480" y="127" width="24" height="18" rx="3" fill="none" stroke="#328FE3" stroke-width="1.8"/>
+  <path d="M476 149h32m-16-4v4" stroke="#328FE3" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M486 135h12" stroke="#328FE3" stroke-width="1.5" stroke-dasharray="2 3"/>
+  <text class="sans" x="534" y="132" font-size="15" font-weight="650" fill="#182432">Check the connection</text>
+  <text class="sans" x="534" y="154" font-size="12" fill="#53677D">Some docks and adapters don't pass</text>
+  <text class="sans" x="534" y="172" font-size="12" fill="#53677D">DDC/CI through to the display.</text>
 </svg>
