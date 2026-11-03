@@ -66,7 +66,7 @@ final class DisplayStore: ObservableObject {
 
     func refresh() {
         do {
-            let output = try Self.run(["display", "list"])
+            let output = try runM1DDC(["display", "list"])
             let parsed = output.components(separatedBy: .newlines).compactMap { line -> (id: Int, name: String)? in
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 guard !trimmed.isEmpty else { return nil }
@@ -85,7 +85,7 @@ final class DisplayStore: ObservableObject {
             
             items = parsed.compactMap { display in
                 let percent: Double
-                if let value = try? Self.run(["display", String(display.id), "get", "luminance"]),
+                if let value = try? runM1DDC(["display", String(display.id), "get", "luminance"]),
                    let parsedVal = value.range(of: #"\d+(?:\.\d+)?"#, options: .regularExpression)
                     .flatMap({ Double(value[$0]) }) {
                     percent = min(100, max(0, parsedVal))
@@ -117,7 +117,7 @@ final class DisplayStore: ObservableObject {
         let val = String(Int(display.brightness.rounded()))
         Task.detached { [weak self] in
             do {
-                _ = try Self.run(["display", String(id), "set", "luminance", val])
+                _ = try runM1DDC(["display", String(id), "set", "luminance", val])
                 await MainActor.run { [weak self] in self?.error = nil }
             } catch {
                 let message = error.localizedDescription
@@ -125,25 +125,25 @@ final class DisplayStore: ObservableObject {
             }
         }
     }
+}
 
-    private static func run(_ arguments: [String]) throws -> String {
-        let candidates = ["/opt/homebrew/bin/m1ddc", "/usr/local/bin/m1ddc"]
-        guard let path = candidates.first(where: FileManager.default.isExecutableFile(atPath:)) else {
-            throw BackendError.missingTool
-        }
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: path)
-        process.arguments = arguments
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-        try process.run()
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        let text = String(decoding: data, as: UTF8.self)
-        guard process.terminationStatus == 0 else { throw BackendError.command(text.trimmingCharacters(in: .whitespacesAndNewlines)) }
-        return text
+private func runM1DDC(_ arguments: [String]) throws -> String {
+    let candidates = ["/opt/homebrew/bin/m1ddc", "/usr/local/bin/m1ddc"]
+    guard let path = candidates.first(where: FileManager.default.isExecutableFile(atPath:)) else {
+        throw BackendError.missingTool
     }
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: path)
+    process.arguments = arguments
+    let pipe = Pipe()
+    process.standardOutput = pipe
+    process.standardError = pipe
+    try process.run()
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    process.waitUntilExit()
+    let text = String(decoding: data, as: UTF8.self)
+    guard process.terminationStatus == 0 else { throw BackendError.command(text.trimmingCharacters(in: .whitespacesAndNewlines)) }
+    return text
 }
 
 enum BackendError: LocalizedError {
