@@ -3,88 +3,113 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
-function readInteger(path) {
-    try {
-        const [ok, bytes] = GLib.file_get_contents(path);
-        if (!ok)
-            return -1;
-
-        const value = Number.parseInt(new TextDecoder().decode(bytes).trim(), 10);
-        return Number.isSafeInteger(value) && value >= 0 ? value : -1;
-    } catch {
-        return -1;
-    }
-}
-
-function backlightPriority(name) {
-    if (/^(intel_backlight|amdgpu_bl|nv_backlight|radeon_bl|apple_panel_bl)/.test(name))
-        return 3;
-    if (/^acpi_video/.test(name))
-        return 1;
-    return 2;
-}
+const PRIORITY_CONTROLLERS = [
+    'intel_backlight',
+    'amdgpu_bl',
+    'apple_panel_bl',
+    'nv_backlight',
+    'radeon_bl',
+];
 
 export function findInternalBacklight() {
-    let children = null;
-    try {
-        const directory = Gio.File.new_for_path('/sys/class/backlight');
-        children = directory.enumerate_children(
-            'standard::name', Gio.FileQueryInfoFlags.NONE, null);
+    const sysBacklight = '/sys/class/backlight';
+    const dir = Gio.File.new_for_path(sysBacklight);
 
-        const names = [];
-        let info;
-        while ((info = children.next_file(null)) !== null)
-            names.push(info.get_name());
-
-        names.sort((a, b) => backlightPriority(b) - backlightPriority(a) || a.localeCompare(b));
-        for (const name of names) {
-            const max = readInteger(`/sys/class/backlight/${name}/max_brightness`);
-            if (max > 0)
-                return {name, max};
-        }
-    } catch {
+    if (!dir.query_exists(null))
         return null;
-    } finally {
-        children?.close(null);
+
+    try {
+        const enumerator = dir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
+        const candidates = [];
+        let info;
+        while ((info = enumerator.next_file(null)) !== null) {
+            const name = info.get_name();
+            const childPath = `${sysBacklight}/${name}`;
+            const brightnessFile = Gio.File.new_for_path(`${childPath}/brightness`);
+            const maxFile = Gio.File.new_for_path(`${childPath}/max_brightness`);
+
+            if (brightnessFile.query_exists(null) && maxFile.query_exists(null))
+                candidates.push({name, path: childPath});
+        }
+
+        if (candidates.length === 0)
+            return null;
+
+        for (const preferred of PRIORITY_CONTROLLERS) {
+            const match = candidates.find(c => c.name.startsWith(preferred));
+            if (match)
+                return match.path;
+        }
+
+        const nonAcpi = candidates.find(c => !c.name.startsWith('acpi_video'));
+        if (nonAcpi)
+            return nonAcpi.path;
+
+        return candidates[0].path;
+    } catch (e) {
+        console.warn(`Lumen: failed scanning ${sysBacklight}: ${e.message}`);
     }
 
     return null;
 }
 
-export function readInternalBrightness(device) {
-    if (!device || device.max <= 0)
-        return null;
+export function readInternalBrightness(backlightPath) {
+    try {
+        const brightFile = Gio.File.new_for_path(`${backlightPath}/brightness`);
+        const maxFile = Gio.File.new_for_path(`${backlightPath}/max_brightness`);
 
-    const value = readInteger(`/sys/class/backlight/${device.name}/brightness`);
-    if (value < 0)
-        return null;
+        const [, brightBytes] = brightFile.load_contents(null);
+        const [, maxBytes] = maxFile.load_contents(null);
 
-    return Math.max(0, Math.min(1, value / device.max));
+        const current = parseInt(new TextDecoder().decode(brightBytes).trim(), 10);
+        const max = parseInt(new TextDecoder().decode(maxBytes).trim(), 10);
+
+        if (max > 0 && !isNaN(current))
+            return Math.round((current / max) * 100);
+    } catch (e) {
+        console.warn(`Lumen: failed reading internal backlight: ${e.message}`);
+    }
+
+    return null;
 }
 
-export function writeInternalBrightness(device, fraction, cancellable) {
-    if (!device || device.max <= 0)
-        return Promise.reject(new Error('The built-in display backlight is unavailable'));
+export function writeInternalBrightness(backlightPath, percent) {
+    try {
+        const maxFile = Gio.File.new_for_path(`${backlightPath}/max_brightness`);
+        const [, maxBytes] = maxFile.load_contents(null);
+        const max = parseInt(new TextDecoder().decode(maxBytes).trim(), 10);
 
-    const value = Math.max(0, Math.min(device.max, Math.round(fraction * device.max)));
-    return new Promise((resolve, reject) => {
-        Gio.DBus.system.call(
+        if (max <= 0 || isNaN(max))
+            return;
+
+        const targetVal = Math.round((Math.min(100, Math.max(0, percent)) / 100) * max);
+
+        const bus = Gio.DBus.system;
+        const params = new GLib.Variant('(ssu)', [
+            'backlight',
+            Gio.File.new_for_path(backlightPath).get_basename(),
+            targetVal,
+        ]);
+
+        bus.call(
             'org.freedesktop.login1',
             '/org/freedesktop/login1/session/auto',
             'org.freedesktop.login1.Session',
             'SetBrightness',
-            new GLib.Variant('(ssu)', ['backlight', device.name, value]),
+            params,
             null,
             Gio.DBusCallFlags.NONE,
             -1,
-            cancellable,
-            (connection, result) => {
+            null,
+            (obj, res) => {
                 try {
-                    connection.call_finish(result);
-                    resolve();
-                } catch (error) {
-                    reject(error);
+                    obj.call_finish(res);
+                } catch (e) {
+                    console.warn(`Lumen: logind SetBrightness failed: ${e.message}`);
                 }
-            });
-    });
+            }
+        );
+    } catch (e) {
+        console.warn(`Lumen: writeInternalBrightness failed: ${e.message}`);
+    }
 }

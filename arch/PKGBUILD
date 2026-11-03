@@ -6,7 +6,8 @@ arch=('any')
 url='https://github.com/sailxx/lumen'
 license=('MIT')
 depends=('gnome-shell>=45' 'ddcutil>=1.4' 'i2c-tools' 'glib2')
-source=("lumen::git+https://github.com/sailxx/lumen.git#branch=main")
+makedepends=('git')
+source=("lumen::git+https://github.com/sailxx/lumen.git#tag=v${pkgver}")
 sha256sums=('SKIP')
 install=lumen.install
 
@@ -20,4 +21,8 @@ package() {
   done < "$root/extension/extension-files.txt"
   install -Dm644 "$root/extension/schemas/org.gnome.shell.extensions.monitor-brightness.gschema.xml" \
     "$pkgdir/usr/share/glib-2.0/schemas/org.gnome.shell.extensions.monitor-brightness.gschema.xml"
+  install -Dm644 "$root/rpm/60-monitor-brightness-i2c.rules" \
+    "$pkgdir/usr/lib/udev/rules.d/60-monitor-brightness-i2c.rules"
+  install -Dm644 "$root/rpm/i2c-dev.conf" \
+    "$pkgdir/usr/lib/modules-load.d/lumen-i2c-dev.conf"
 }

@@ -36,54 +36,42 @@ else
     exit 1
 fi
 
-echo "Loading i2c-dev and enabling it at boot..."
-"${PRIV[@]}" modprobe i2c-dev
-"${PRIV[@]}" install -d -m 0755 /etc/modules-load.d
-printf '%s\n' 'i2c-dev' | "${PRIV[@]}" tee /etc/modules-load.d/lumen-i2c-dev.conf >/dev/null
+echo "Loading i2c-dev kernel module..."
+"${PRIV[@]}" modprobe i2c-dev || true
 
-has_ddcutil_rule=false
-if command -v udevadm >/dev/null 2>&1; then
-    for rule in \
-        /etc/udev/rules.d/60-ddcutil*.rules \
-        /usr/lib/udev/rules.d/60-ddcutil*.rules \
-        /lib/udev/rules.d/60-ddcutil*.rules \
-        /usr/share/udev/rules.d/60-ddcutil*.rules; do
-        if [[ -f "$rule" ]]; then
-            has_ddcutil_rule=true
-            break
-        fi
-    done
-    if [[ "$has_ddcutil_rule" == true ]]; then
-        echo "Found the udev permissions rule provided by ddcutil."
-    else
-        echo "Installing an active-session udev rule for I2C devices..."
-        "${PRIV[@]}" install -D -m 0644 "$SCRIPT_DIR/rpm/60-monitor-brightness-i2c.rules" \
-            /etc/udev/rules.d/60-monitor-brightness-i2c.rules
+if [[ -d /etc/modules-load.d ]]; then
+    echo "i2c-dev" | "${PRIV[@]}" tee /etc/modules-load.d/lumen-i2c.conf >/dev/null
+fi
+
+if ! getent group i2c >/dev/null 2>&1; then
+    echo "Creating i2c group..."
+    if command -v groupadd >/dev/null 2>&1; then
+        "${PRIV[@]}" groupadd -r i2c || true
+    elif command -v addgroup >/dev/null 2>&1; then
+        "${PRIV[@]}" addgroup -S i2c || true
     fi
-    "${PRIV[@]}" udevadm control --reload-rules
-    "${PRIV[@]}" udevadm trigger --subsystem-match=i2c-dev
-else
-    echo "udevadm is not available. Configure I2C device permissions with your system's device manager."
 fi
 
-echo
-if ddcutil detect; then
-    echo "Display detection completed."
-else
-    echo "No DDC/CI displays were detected yet. Check the monitor OSD and run 'ddcutil detect' again."
+echo "Adding $USER to the i2c group..."
+if command -v usermod >/dev/null 2>&1; then
+    "${PRIV[@]}" usermod -aG i2c "$USER" || true
+elif command -v addgroup >/dev/null 2>&1; then
+    "${PRIV[@]}" addgroup "$USER" i2c || true
 fi
 
-cat <<'EOF'
+if [[ -d /etc/udev/rules.d ]]; then
+    echo "Installing udev rules for i2c access..."
+    cat <<'UDEV_INNER' | "${PRIV[@]}" tee /etc/udev/rules.d/99-i2c.rules >/dev/null
+KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"
+UDEV_INNER
+    if command -v udevadm >/dev/null 2>&1; then
+        "${PRIV[@]}" udevadm control --reload-rules || true
+        "${PRIV[@]}" udevadm trigger --subsystem-match=i2c-dev || true
+    fi
+fi
 
-Setup is complete. Sign out and back in so the new device permissions apply.
-Then install the GNOME Shell extension:
+cat <<'MSG_INNER'
 
-  cd extension
-  ./install.sh
-
-Enable it after restarting GNOME Shell:
-  gnome-extensions enable lumen@vlad
-
-If detection fails, enable DDC/CI in the monitor's on-screen menu. With some
-NVIDIA drivers, modesetting may also be required.
-EOF
+Setup complete!
+If your user was added to the 'i2c' group, log out and log back in to apply group permissions.
+MSG_INNER
