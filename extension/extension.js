@@ -29,7 +29,7 @@ const BrightnessRow = GObject.registerClass({
         this.stepPercent = 5;
         this.dragging = false;
         this.pendingWrite = false;
-        this.updating = false;
+        this._updating = false;
 
         this._nameLabel = new St.Label({
             text: desc.label,

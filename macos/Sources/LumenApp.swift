@@ -66,18 +66,18 @@ final class DisplayStore: ObservableObject {
 
     func refresh() {
         do {
-            let output = try run(["display", "list"])
+            let output = try Self.run(["display", "list"])
             let parsed = output.components(separatedBy: .newlines).compactMap { line -> (id: Int, name: String)? in
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 guard !trimmed.isEmpty else { return nil }
                 
-                guard let match = trimmed.range(of: #"^(?:\[?(\d+)\]?|Display\s+(\d+))[:\s-]+(.*)$"#, options: .regularExpression) else {
+                guard let match = trimmed.range(of: #"^(?:\[?(\d+)\]?|Display\s+(\d+))[:\s-]+(.*)$"#, options: .regularExpression) else {
                     return nil
                 }
                 let matchedStr = String(trimmed[match])
                 let idDigits = matchedStr.components(separatedBy: CharacterSet.decimalDigits.inverted).filter { !$0.isEmpty }
                 guard let firstId = idDigits.first, let num = Int(firstId) else { return nil }
-                let rawName = trimmed.replacingOccurrences(of: #"^(?:\[?\d+\]?|Display\s+\d+)[:\s-]+"#, with: "", options: .regularExpression)
+                let rawName = trimmed.replacingOccurrences(of: #"^(?:\[?\d+\]?|Display\s+\d+)[:\s-]+"#, with: "", options: .regularExpression)
                     .replacingOccurrences(of: #"\s*\(.*\)$"#, with: "", options: .regularExpression)
                     .trimmingCharacters(in: .whitespaces)
                 return (id: num, name: rawName.isEmpty ? "Display \(num)" : rawName)
@@ -85,7 +85,7 @@ final class DisplayStore: ObservableObject {
             
             items = parsed.compactMap { display in
                 let percent: Double
-                if let value = try? run(["display", String(display.id), "get", "luminance"]),
+                if let value = try? Self.run(["display", String(display.id), "get", "luminance"]),
                    let parsedVal = value.range(of: #"\d+(?:\.\d+)?"#, options: .regularExpression)
                     .flatMap({ Double(value[$0]) }) {
                     percent = min(100, max(0, parsedVal))
@@ -117,15 +117,16 @@ final class DisplayStore: ObservableObject {
         let val = String(Int(display.brightness.rounded()))
         Task.detached { [weak self] in
             do {
-                _ = try self?.run(["display", String(id), "set", "luminance", val])
-                await MainActor.run { self?.error = nil }
+                _ = try Self.run(["display", String(id), "set", "luminance", val])
+                await MainActor.run { [weak self] in self?.error = nil }
             } catch {
-                await MainActor.run { self?.error = error.localizedDescription }
+                let message = error.localizedDescription
+                await MainActor.run { [weak self] in self?.error = message }
             }
         }
     }
 
-    private nonisolated func run(_ arguments: [String]) throws -> String {
+    private static func run(_ arguments: [String]) throws -> String {
         let candidates = ["/opt/homebrew/bin/m1ddc", "/usr/local/bin/m1ddc"]
         guard let path = candidates.first(where: FileManager.default.isExecutableFile(atPath:)) else {
             throw BackendError.missingTool

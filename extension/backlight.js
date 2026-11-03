@@ -93,8 +93,8 @@ export function writeInternalBrightness(backlightPath, percent) {
 
         bus.call(
             'org.freedesktop.login1',
-            '/org/freedesktop/login1',
-            'org.freedesktop.login1.Manager',
+            '/org/freedesktop/login1/session/auto',
+            'org.freedesktop.login1.Session',
             'SetBrightness',
             params,
             null,

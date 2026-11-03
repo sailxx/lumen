@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 META="$ROOT/extension/metadata.json"
-VERSION="$(sed -nE 's/^[[:space:]]*"version":[[:space:]]*([0-9]+).*//p' "$META" | head -n1)"
+VERSION="$(sed -nE 's/^[[:space:]]*"version":[[:space:]]*([0-9]+).*/\1/p' "$META" | head -n1)"
 [[ -n "$VERSION" ]] || { echo "Could not read extension version." >&2; exit 1; }
 command -v dpkg-deb >/dev/null || { echo "Install dpkg-deb to build the package." >&2; exit 1; }
 OUT="${1:-$ROOT/deb/gnome-shell-extension-lumen_${VERSION}_all.deb}"

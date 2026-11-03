@@ -45,7 +45,7 @@ jobs:
           ]
 
           assert "metadata.json" in manifest
-          assert "schemas/gschemas.compiled" in manifest
+          assert "schemas/org.gnome.shell.extensions.monitor-brightness.gschema.xml" in manifest
 
           for relative_path in manifest:
               path = root / "extension" / relative_path
